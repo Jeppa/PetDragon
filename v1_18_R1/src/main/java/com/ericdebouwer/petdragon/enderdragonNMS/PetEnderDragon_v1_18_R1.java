@@ -2,7 +2,7 @@ package com.ericdebouwer.petdragon.enderdragonNMS;
 
 import com.ericdebouwer.petdragon.PetDragon;
 import com.ericdebouwer.petdragon.api.DragonSwoopEvent;
-import net.minecraft.core.BlockPos;
+//import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundLevelEventPacket;
@@ -23,11 +23,13 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Sound;
 import org.bukkit.craftbukkit.v1_18_R1.CraftWorld;
 import org.bukkit.craftbukkit.v1_18_R1.entity.CraftEnderDragon;
 import org.bukkit.craftbukkit.v1_18_R1.entity.CraftLivingEntity;
 import org.bukkit.entity.DragonFireball;
 import org.bukkit.entity.HumanEntity;
+//import org.bukkit.entity.Player;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.util.Vector;
 
@@ -49,7 +51,7 @@ public class PetEnderDragon_v1_18_R1 extends EnderDragon implements PetEnderDrag
 	static Method checkCrystals;
 	static {
 		try {
-			// specialsource does ignore reflection, so non mapped names
+			// specialsource does ignore reflection, so non mapped names	
 			jumpField = LivingEntity.class.getDeclaredField("bo");
 			jumpField.setAccessible(true);
 			checkWalls = EnderDragon.class.getDeclaredMethod("b", AABB.class);
@@ -75,7 +77,7 @@ public class PetEnderDragon_v1_18_R1 extends EnderDragon implements PetEnderDrag
 
 		this.setupDefault();
 		this.getBukkitEntity().setSilent(plugin.getConfigManager().silent);
-		this.noPhysics = plugin.getConfigManager().flyThroughBlocks;
+		this.noPhysics = plugin.getConfigManager().flyThroughBlocks; //noclip in Entity.class
 		this.setPos(loc.getX(), loc.getY(), loc.getZ());
 	}
 	
@@ -148,8 +150,7 @@ public class PetEnderDragon_v1_18_R1 extends EnderDragon implements PetEnderDrag
 	public boolean canChangeDimensions(){
 		return true;
 	}
-	
-    
+
 	@Override
 	// each movement update
 	public void aiStep(){
@@ -275,8 +276,11 @@ public class PetEnderDragon_v1_18_R1 extends EnderDragon implements PetEnderDrag
 		
 		if (rider.getBukkitEntity().hasPermission("petdragon.shoot") && jumpField != null){
 			try {
-				boolean jumped = jumpField.getBoolean(rider);
-				if (jumped && plugin.getConfigManager().shootCooldown * 1000 <= (System.currentTimeMillis() - lastShot)){
+				boolean jumped = false;
+				if(plugin.getConfigManager().fireOnJump){
+					jumped = jumpField.getBoolean(rider);
+				}
+				if ((jumped) && plugin.getConfigManager().shootCooldown * 1000 <= (System.currentTimeMillis() - lastShot)){
 
 					Location loc = this.getBukkitEntity().getLocation();
 					loc.add(forwardDir.clone().multiply(10).setY(-1));
@@ -363,48 +367,63 @@ public class PetEnderDragon_v1_18_R1 extends EnderDragon implements PetEnderDrag
 		if (this.dragonDeathTime == 1 && !this.isSilent()) {
 
 			int viewDistance = (this.level).getCraftServer().getViewDistance() * 16;
+			int deathSoundRadius=this.level.spigotConfig.dragonDeathSoundRadius;
 
-			Iterator<ServerPlayer> var5 = this.level.getServer().getPlayerList().players.iterator();
-
-			label59 : while (true) {
-				ServerPlayer player;
-				double deltaX;
-				double deltaZ;
-				double distanceSquared;
-				do {
-					if (!var5.hasNext()) {
-						break label59;
-					}
-
-					player = var5.next();
-					deltaX = this.getX() - player.getX();
-					deltaZ = this.getZ() - player.getZ();
-					distanceSquared = deltaX * deltaX + deltaZ * deltaZ;
-				} while (this.level.spigotConfig.dragonDeathSoundRadius > 0
-						&& distanceSquared > (double) (this.level.spigotConfig.dragonDeathSoundRadius * this.level.spigotConfig.dragonDeathSoundRadius));
-
-				if (distanceSquared > (double) (viewDistance * viewDistance)) {
-					double deltaLength = Math.sqrt(distanceSquared);
-					double relativeX = player.getX() + deltaX / deltaLength
-							* (double) viewDistance;
-					double relativeZ = player.getZ() + deltaZ / deltaLength
-							* (double) viewDistance;
-					player.connection.send(new ClientboundLevelEventPacket(1028, new BlockPos((int)relativeX, (int)this.getY(), (int)relativeZ), 0, true));
-
+//			Iterator<ServerPlayer> var5 = this.level.getServer().getPlayerList().players.iterator();
+//
+//			label59:while (var5.hasNext()) {//			label59 : while (true) {
+//				ServerPlayer player;
+//				double deltaX;
+//				double deltaZ;
+//				double distanceSquared;
+//				do {
+//					if (!var5.hasNext()) {
+//						break label59;
+//					}
+//
+//					player = var5.next();
+//					deltaX = this.getX() - player.getX();
+//					deltaZ = this.getZ() - player.getZ();
+//					distanceSquared = deltaX * deltaX + deltaZ * deltaZ;
+//				} while (deathSoundRadius > 0 && distanceSquared > (double) (deathSoundRadius * deathSoundRadius));
+//
+//				if (distanceSquared > (double) (viewDistance * viewDistance)) {
+//					double deltaLength = Math.sqrt(distanceSquared);
+//					double relativeX = player.getX() + deltaX / deltaLength
+//							* (double) viewDistance;
+//					double relativeZ = player.getZ() + deltaZ / deltaLength
+//							* (double) viewDistance;
+//					player.connection.send(new ClientboundLevelEventPacket(1028, new BlockPos((int)relativeX, (int)this.getY(), (int)relativeZ), 0, true));
+//
+//				} else {
+//					player.connection.send(new ClientboundLevelEventPacket(1028, new BlockPos((int)this.getX(), (int)this.getY(), (int)this.getZ()), 0, true));
+//
+//				}
+//			}
+			//Jeppa-Version with Player
+			for (org.bukkit.entity.Player player:Bukkit.getServer().getOnlinePlayers()) {
+				double distance = player.getLocation().distance(loc);
+				if (deathSoundRadius > 0 && distance > deathSoundRadius)continue;
+				if (!player.getWorld().getName().equals(this.getBukkitEntity().getWorld().getName()))continue;
+				if (distance > viewDistance) {
+					PlayDragonSound(player, loc, (float)(distance/16.1)+1);
 				} else {
-					player.connection.send(new ClientboundLevelEventPacket(1028, new BlockPos((int)this.getX(), (int)this.getY(), (int)this.getZ()), 0, true));
-
+					PlayDragonSound(player, player.getLocation(), 0.9F);
 				}
-			}
+			} 
 		}
-		
 		
 		if (this.dragonDeathTime <= 100) {
 			// particle stuff
 			float f = (this.random.nextFloat() - 0.5F) * 8.0F;
 			float f1 = (this.random.nextFloat() - 0.5F) * 4.0F;
 			float f2 = (this.random.nextFloat() - 0.5F) * 8.0F;
-			this.level.addParticle(ParticleTypes.EXPLOSION_EMITTER, this.getX() + (double)f, this.getY() + 2.0D + (double)f1, this.getZ() + (double)f2, 0.0D, 0.0D, 0.0D);
+			//Jeppa: getting ParticleTypes.EXPLOSION_EMITTER resulted in a 'NoSuchFieldError' ? (maybe maven compiler issue... or obfuscation...)
+			try{
+				this.level.addParticle(ParticleTypes.EXPLOSION_EMITTER, this.getX() + (double)f, this.getY() + 2.0D + (double)f1, this.getZ() + (double)f2, 0.0D, 0.0D, 0.0D);
+			} catch (NoSuchFieldError e) {
+				//NOTHING
+			}
 
 		}
 		else {
@@ -412,5 +431,13 @@ public class PetEnderDragon_v1_18_R1 extends EnderDragon implements PetEnderDrag
 		}
 		
 	}
-
+	private void PlayDragonSound(org.bukkit.entity.Player player, Location dragonPos, float distance) {
+		   Sound sound=null;
+		   try{
+			   sound = (org.bukkit.Sound.valueOf("ENTITY_ENDER_DRAGON_DEATH")); //1.13+
+		   }catch (IllegalArgumentException e3){
+			   //No Sound ????
+		   }
+		   if (sound != null) player.getWorld().playSound(dragonPos, sound, distance, 1.0F);
+	}
 }

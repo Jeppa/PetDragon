@@ -2,6 +2,8 @@ package com.ericdebouwer.petdragon;
 
 import com.ericdebouwer.petdragon.config.Message;
 import com.ericdebouwer.petdragon.enderdragonNMS.PetEnderDragon;
+import com.google.common.collect.ImmutableMap;
+
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -51,7 +53,15 @@ public class EggManager implements Listener {
 			}
 			else e.getPlayer().getInventory().setItemInMainHand(null);
 		}
-
+		//Jeppa: use max-dragons-for-eggs also for eggs...
+		if (plugin.getConfigManager().useMaxDragonsForEggs && !e.getPlayer().hasPermission("petdragon.bypass.dragonlimit")){
+			int dragonCount = plugin.getFactory().getDragons(e.getPlayer()).size();
+			if (dragonCount >= plugin.getConfigManager().maxDragons){
+				plugin.getConfigManager().sendMessage(e.getPlayer(), Message.DRAGON_LIMIT, ImmutableMap.of("amount", "" + dragonCount));
+				e.setCancelled(true);
+				return;
+			}
+		}
 		PetEnderDragon dragon = plugin.getFactory().create(e.getBlock().getLocation().add(0, 3, 0), e.getPlayer().getUniqueId());
 		dragon.spawn();
 		plugin.getConfigManager().sendMessage(e.getPlayer(), Message.EGG_HATCHED, null);

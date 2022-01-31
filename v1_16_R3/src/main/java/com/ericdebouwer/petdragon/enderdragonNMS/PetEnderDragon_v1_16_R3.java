@@ -24,6 +24,7 @@ import net.minecraft.server.v1_16_R3.Vec3D;
 import net.minecraft.server.v1_16_R3.World;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Sound;
 import org.bukkit.craftbukkit.v1_16_R3.CraftWorld;
 import org.bukkit.craftbukkit.v1_16_R3.entity.CraftEnderDragon;
 import org.bukkit.craftbukkit.v1_16_R3.entity.CraftLivingEntity;
@@ -150,7 +151,6 @@ public class PetEnderDragon_v1_16_R3 extends EntityEnderDragon implements PetEnd
 		return true;
 	}
 	
-    
 	@Override
 	// each movement update
 	public void movementTick(){
@@ -282,8 +282,11 @@ public class PetEnderDragon_v1_16_R3 extends EntityEnderDragon implements PetEnd
 		
 		if (rider.getBukkitEntity().hasPermission("petdragon.shoot") && jumpField != null){
 			try {
-				boolean jumped = jumpField.getBoolean(rider);
-				if (jumped && plugin.getConfigManager().shootCooldown * 1000 <= (System.currentTimeMillis() - lastShot)){
+				boolean jumped = false;
+				if(plugin.getConfigManager().fireOnJump){ //Jeppa: only if activated in config...
+					jumped = jumpField.getBoolean(rider);
+				}
+				if ((jumped) && plugin.getConfigManager().shootCooldown * 1000 <= (System.currentTimeMillis() - lastShot)){
 
 					Location loc = this.getBukkitEntity().getLocation();
 					loc.add(forwardDir.clone().multiply(10).setY(-1));
@@ -369,7 +372,8 @@ public class PetEnderDragon_v1_16_R3 extends EntityEnderDragon implements PetEnd
 		if (this.deathAnimationTicks == 1 && !this.isSilent()) {
 			int viewDistance = (this.world).getServer()
 					.getViewDistance() * 16;
-			@SuppressWarnings("deprecation")
+			int deathSoundRadius=this.world.spigotConfig.dragonDeathSoundRadius;
+/*			@SuppressWarnings("deprecation")
 			Iterator<EntityPlayer> var5 = MinecraftServer.getServer().getPlayerList().players
 					.iterator();
 
@@ -408,7 +412,18 @@ public class PetEnderDragon_v1_16_R3 extends EntityEnderDragon implements PetEnd
 											(int) this.locY(), (int) this
 													.locZ()), 0, true));
 				}
-			}
+			}*/
+		      //Jeppa-Version with Player
+		      for (org.bukkit.entity.Player player:Bukkit.getServer().getOnlinePlayers()) {
+		    	  double distance = player.getLocation().distance(loc);
+		    	  if (deathSoundRadius > 0 && distance > deathSoundRadius)continue;
+		    	  if (!player.getWorld().getName().equals(this.getBukkitEntity().getWorld().getName()))continue; 
+		    	  if (distance > viewDistance) {
+		            PlayDragonSound(player, loc, (float)(distance/16.1)+1);
+				} else {
+					PlayDragonSound(player, player.getLocation(), 0.9F);
+				} 
+		      } 
 		}
 		
 		
@@ -426,5 +441,13 @@ public class PetEnderDragon_v1_16_R3 extends EntityEnderDragon implements PetEnd
 		}
 		
 	}
-
+	private void PlayDragonSound(org.bukkit.entity.Player player, Location dragonPos, float distance) {
+		Sound sound=null;
+		try{
+			sound = (org.bukkit.Sound.valueOf("ENTITY_ENDER_DRAGON_DEATH")); //1.13+
+		}catch (IllegalArgumentException e3){
+			//No Sound ????
+		}
+		if (sound != null) player.getWorld().playSound(dragonPos, sound, distance, 1.0F);
+	}
 }

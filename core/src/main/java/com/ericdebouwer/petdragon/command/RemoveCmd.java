@@ -62,6 +62,9 @@ public class RemoveCmd extends SubCommand {
                             ImmutableMap.of("owner", ownerName == null ? "unknown" : ownerName));
                     return true;
                 }
+                //Jeppa: remove dragon Location from File...
+                plugin.getLocationManager().remLocation(owner, dragon.getLocation());
+                
                 dragon.remove();
                 found = true;
             }

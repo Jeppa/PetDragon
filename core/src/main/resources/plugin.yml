@@ -35,3 +35,7 @@ permissions:
       default: true
    petdragon.shoot:
       default: true
+   petdragon.breath:
+      default: true
+   petdragon.fireball:
+      default: true

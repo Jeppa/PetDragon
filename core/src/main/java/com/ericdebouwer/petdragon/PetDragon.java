@@ -1,5 +1,6 @@
 package com.ericdebouwer.petdragon;
 
+import com.jeppa.config.DragonLocations;
 import com.ericdebouwer.petdragon.command.BaseCommand;
 import com.ericdebouwer.petdragon.config.ConfigManager;
 import org.bstats.bukkit.Metrics;
@@ -23,6 +24,8 @@ public class PetDragon extends JavaPlugin {
 	private DragonFactory dragonFactory;
 	private EggManager eggManager;
 	
+	private DragonLocations dragonLocations; //for remembering the dragons locations...
+	
 	@Override
 	public void onEnable() {
 		String logPrefix = "[" + this.getName() + "] ";
@@ -31,19 +34,25 @@ public class PetDragon extends JavaPlugin {
 		
 		if (!dragonFactory.isCorrectVersion()){
 			getServer().getConsoleSender().sendMessage(ChatColor.BOLD + "" +ChatColor.RED + logPrefix + "Unsupported minecraft version! Check the download page for supported versions!");
-			getServer().getConsoleSender().sendMessage(ChatColor.BOLD + "" +ChatColor.RED + logPrefix +"Plugin will disable to prevent crashing!");
+			getServer().getConsoleSender().sendMessage(ChatColor.BOLD + "" +ChatColor.RED + logPrefix + "Plugin will disable to prevent crashing!");
 			return;
 		}
 		
 		this.configManager = new ConfigManager(this);
 		
 		if (!this.configManager.isValid()){
-			getServer().getConsoleSender().sendMessage(ChatColor.BOLD + "" +ChatColor.RED + logPrefix +"Invalid config.yml, plugin will disable to prevent crashing!");
- 			getServer().getConsoleSender().sendMessage(ChatColor.BOLD + "" + ChatColor.RED + logPrefix + "See the header of the config.yml about fixing the problem.");
+			getServer().getConsoleSender().sendMessage(ChatColor.BOLD + "" +ChatColor.RED + logPrefix + "Invalid config.yml, plugin will disable to prevent crashing!");
+ 			getServer().getConsoleSender().sendMessage(ChatColor.BOLD + "" +ChatColor.RED + logPrefix + "See the header of the config.yml about fixing the problem.");
 			return;
 		}
 		getLogger().info("Configuration has been successfully loaded!");
 
+		this.dragonLocations = new DragonLocations(this);					//Jeppa: added to have saved Locations
+		getServer().getScheduler().scheduleSyncDelayedTask(this, () -> {
+			this.dragonLocations.getDragonLocations(); //init! -> has to be delayed, because of not yet loaded worlds...
+		});
+
+		
 		Bukkit.getScheduler().scheduleSyncDelayedTask(this, () ->
 			getLogger().info("If you really love this project, you could consider donating to help me keep this project alive! https://paypal.me/3ricL"));
 
@@ -62,8 +71,8 @@ public class PetDragon extends JavaPlugin {
 				.onStart(() -> getLogger().info("Checking for updates..."))
 				.onError(() -> getLogger().warning("Failed to check for updates!"))
 				.onOldVersion((oldVersion, newVersion) -> {
-					getLogger().info( "Update detected! You are using version " + oldVersion + ", but version " + newVersion + " is available!");
-					getLogger().info("You can download the new version here -> https://www.spigotmc.org/resources/" +  UpdateChecker.RESOURCE_ID + "/updates");
+					getLogger().info("Update detected! You are using version " + oldVersion + ", but version " + newVersion + " is available!");
+					getLogger().info("You can download the new version here -> https://www.spigotmc.org/resources/" + UpdateChecker.RESOURCE_ID + "/updates");
 				})
 				.onNoUpdate(() -> getLogger().info("You are running the latest version."))
 			.run();
@@ -73,7 +82,11 @@ public class PetDragon extends JavaPlugin {
 	public ConfigManager getConfigManager() {
 		return this.configManager;
 	}
-	
+
+	public DragonLocations getLocationManager() {
+		return this.dragonLocations;
+	}
+
 	public DragonFactory getFactory(){
 		return this.dragonFactory;
 	}

@@ -67,6 +67,15 @@ click-to-remove: false
 # This name will be given to the PetDragon spawn egg (obtainable via /dragon egg)
 dragon-egg-name: "§5§lPetDragon spawn egg"
 
+# Whether the dragon should fire on pressing space (default for jumping)
+fire-on-jump: true
+
+# Material for firing Fire-Breath (not DragonBreath)
+fire-breath-material: FIRE_CHARGE
+
+# Material for firing Dragon-Breath (additionaly on default Jump-Fire behavior)
+breath-material: ENDER_PEARL
+
 # Whether PetDragon spawn eggs will be used up even in gamemodes like creative
 always-use-up-egg: true
 

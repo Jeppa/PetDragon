@@ -151,7 +151,6 @@ public class PetEnderDragon_v1_16_R1 extends EntityEnderDragon implements PetEnd
 		return true;
 	}
 	
-    
 	@Override
 	// each movement update
 	public void movementTick(){
@@ -282,8 +281,11 @@ public class PetEnderDragon_v1_16_R1 extends EntityEnderDragon implements PetEnd
 
 		if (rider.getBukkitEntity().hasPermission("petdragon.shoot") && jumpField != null){
 			try {
-				boolean jumped = jumpField.getBoolean(rider);
-				if (jumped && plugin.getConfigManager().shootCooldown * 1000 <= (System.currentTimeMillis() - lastShot)){
+				boolean jumped = false;
+				if(plugin.getConfigManager().fireOnJump){ //Jeppa: only if activated in config...
+					jumped = jumpField.getBoolean(rider);
+				}
+				if ((jumped) && plugin.getConfigManager().shootCooldown * 1000 <= (System.currentTimeMillis() - lastShot)){
 
 					Location loc = this.getBukkitEntity().getLocation();
 					loc.add(forwardDir.clone().multiply(10).setY(-1));

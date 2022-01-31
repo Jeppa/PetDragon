@@ -41,11 +41,14 @@ public class ConfigManager {
 	public float wingDamage = 5.0F;
 
 	public int maxDragons = Integer.MAX_VALUE;
+	public boolean useMaxDragonsForEggs=false;
 	public boolean clickToRemove = false;
 	public String pluginPrefix = "";
 	public String dragonEggName = "";
 	public boolean alwaysUseUpEgg = true;
-	
+	public boolean fireOnJump = true;
+	public String breathMat = "ENDER_PEARL";
+	public String firebreathMat = "FIRE_CHARGE";
 	
 	public ConfigManager(PetDragon plugin) {
 		this.plugin = plugin;
@@ -103,6 +106,10 @@ public class ConfigManager {
 		maxDragons = plugin.getConfig().getInt("max-dragons-per-player");
 		
 		clickToRemove = plugin.getConfig().getBoolean("click-to-remove");
+		
+		fireOnJump = plugin.getConfig().getBoolean("fire-on-jump");
+		breathMat = plugin.getConfig().getString("breath-material");
+		firebreathMat = plugin.getConfig().getString("fire-breath-material");
 	}
 	
 	public boolean isValid(){
