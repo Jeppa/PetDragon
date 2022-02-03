@@ -67,7 +67,12 @@ public class DragonListener implements Listener {
 			if (!e.getChunk().isLoaded()) return;
 
 			for (Entity ent: e.getChunk().getEntities()){
-				plugin.getFactory().handleDragonReset(ent);
+				//Jeppa: ONLY Reset Dragon if needed...
+				if (!plugin.getFactory().isPetDragon(ent)) continue;
+				EnderDragon dragon=(EnderDragon)ent;
+				if (plugin.getFactory().checkPetDragonBroken(dragon)) {
+					plugin.getFactory().handleDragonReset(ent);
+				}
 			}
 
 		}, 7); // WIP: see https://hub.spigotmc.org/jira/browse/SPIGOT-6547

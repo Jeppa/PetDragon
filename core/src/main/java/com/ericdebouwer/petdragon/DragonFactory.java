@@ -81,9 +81,8 @@ public class DragonFactory {
 	
 	public boolean isPetDragon(Entity ent){
 		if (!(ent instanceof EnderDragon)) return false;
-//		return ent.getScoreboardTags().contains(PetEnderDragon.DRAGON_ID);
 		boolean isPet=ent.getScoreboardTags().contains(PetEnderDragon.DRAGON_ID);
-		//check for existing owner...(if Tag fails...)
+		//check for existing owner...(if Tag fails...should never happen...)
 		if (!isPet) {
 			isPet=ent.getPersistentDataContainer().has(ownerKey, PersistentDataType.STRING);
 		}
@@ -116,12 +115,8 @@ public class DragonFactory {
 		dragon.addPassenger(p);
 
 		//Jeppa: Reset Dragon if needed...
-		try {
-			Class<?> CraftDragClass = Class.forName("org.bukkit.craftbukkit."+nmsVersion+".entity.CraftEnderDragon");
-			PetEnderDragon petDragon = (PetEnderDragon) CraftDragClass.getDeclaredMethod("getHandle").invoke(CraftDragClass.cast(dragon)); // Kann sein daß DAS schon zu Erkennung reicht.. ein Drache der NICHT mehr geht kann auch nicht gecasted werden!?
-		} catch (ClassCastException e) {//Dragon can not be cast from EntityEnderDragon to PetEnderDragon ! Dragon is broken! --> Reset!
+		if (checkPetDragonBroken(dragon)) {
 			handleDragonReset(dragon);
-		} catch (Exception e) {//Any other Error....
 		}
 		//Jeppa: remove saved location from file...
 		plugin.getLocationManager().remLocation(owner, dragon.getLocation());
@@ -148,11 +143,9 @@ public class DragonFactory {
 		petDragon.copyFrom(dragon);
 		double health=dragon.getHealth();
 		dragon.remove();
-		Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-			petDragon.spawn();
-			petDragon.getEntity().setHealth(health);//keep the damage/health?
-			passengers.forEach(p -> petDragon.getEntity().addPassenger(p));
-		});
+		petDragon.spawn();
+		petDragon.getEntity().setHealth(health);//keep the damage/health?
+		passengers.forEach(p -> petDragon.getEntity().addPassenger(p));
 	}
 
 	public Set<EnderDragon> getDragons(OfflinePlayer player){
@@ -175,7 +168,17 @@ public class DragonFactory {
 		if (uuidText == null || uuidText.equals("")) return null;
 		return UUID.fromString(uuidText);
 	}
-	
-	
-	
+
+	//Jeppa: Check if dragon needs a reset...
+	public boolean checkPetDragonBroken(EnderDragon dragon) {
+		boolean resetNeeded=false;
+		try {
+			Class<?> CraftDragClass = Class.forName("org.bukkit.craftbukkit."+nmsVersion+".entity.CraftEnderDragon");
+			PetEnderDragon petDragon = (PetEnderDragon) CraftDragClass.getDeclaredMethod("getHandle").invoke(CraftDragClass.cast(dragon));
+		} catch (ClassCastException e) {//Dragon can not be cast from EntityEnderDragon to PetEnderDragon ! Dragon is broken! --> Reset!
+			resetNeeded=true;//dragon can't be casted anymore -> Reset is needed!!!
+		} catch (Exception e) {//Any other Error....
+		}
+		return resetNeeded;
+	}
 }
