@@ -120,6 +120,7 @@ public class ConfigManager {
 	public String parseMessage(Message message, ImmutableMap<String, String> replacements) {
 		String msg = plugin.getConfig().getString(MESSAGES_PREFIX + message.getKey());
 		if (msg == null || msg.isEmpty()) return null;
+		msg = msg.replace('&', '§');//Jeppa: Fix issues with colorcodes in configfiles -> use & for colorcodes!
 		String colorMsg = ChatColor.translateAlternateColorCodes('§', this.pluginPrefix + msg);
 		if (replacements != null){
 			for (Map.Entry<String, String> entry: replacements.entrySet()){

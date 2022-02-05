@@ -11,6 +11,7 @@ public enum Message {
 	DRAGON_REMOVED ("dragon-removed"),
 	DRAGON_NOT_FOUND ("no-dragon-found-to-remove"),
 	RANGE_INVALID("remove-range-invalid"),
+	VALUES_INVALID("remove-values-invalid"),
 	NOT_YOURS_TO_REMOVE ("not-yours-to-remove"),
 	RELOAD_SUCCESS ("reload-success"),
 	RELOAD_FAIL("reload-fail"),

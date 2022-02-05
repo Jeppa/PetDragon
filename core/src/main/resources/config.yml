@@ -105,6 +105,7 @@ messages:
    dragon-removed: "Dragon succesfully removed"
    no-dragon-found-to-remove: "§7No dragon found to remove, make sure you are really close to it!"
    remove-range-invalid: "§cPlease specify the range as a positive integer smaller than 20"
+   remove-values-invalid: "§cPlease specify the values as [worldname] [x] [y] [z]"
    # you can use {owner} for the name of the person who spawned/owns this dragon
    not-yours-to-remove: "§cYou are not allowed to remove {owner}'s dragon!"
    

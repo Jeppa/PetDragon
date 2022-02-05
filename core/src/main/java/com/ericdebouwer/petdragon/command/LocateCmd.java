@@ -49,7 +49,8 @@ public class LocateCmd extends SubCommand {
 	
 	            if (configManager.clickToRemove) {
 	                TextComponent message = new TextComponent(text);
-	                message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/" + BaseCommand.NAME + " remove " + dragon.getUniqueId()));
+//	                message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/" + BaseCommand.NAME + " remove " + dragon.getUniqueId())); //'old' method by UUID, but UUID does not survive chunk reloads.. :(
+	                message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/" + BaseCommand.NAME + " remove " + loc.getWorld().getName() + " " +loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ()));//Jeppa: new method using the location to find a dragon
 	                message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, TextComponent.fromLegacyText(configManager.parseMessage(Message.LOCATED_HOVER, null))));
 	                player.spigot().sendMessage(message);
 	            }else {
