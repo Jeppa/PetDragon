@@ -24,7 +24,7 @@ public class DragonFactory {
 	
 	PetDragon plugin;
 	Class<?> dragonClass;
-	private boolean correctVersion;
+	private final boolean correctVersion;
 	public NamespacedKey ownerKey;
 
 	public DragonFactory(PetDragon plugin){
@@ -170,14 +170,16 @@ public class DragonFactory {
 	}
 
 	//Jeppa: Check if dragon needs a reset...
-	public boolean checkPetDragonBroken(EnderDragon dragon) {
+	public boolean checkPetDragonBroken(Entity dragon) {
 		boolean resetNeeded=false;
-		try {
-			Class<?> CraftDragClass = Class.forName("org.bukkit.craftbukkit."+nmsVersion+".entity.CraftEnderDragon");
-			PetEnderDragon petDragon = (PetEnderDragon) CraftDragClass.getDeclaredMethod("getHandle").invoke(CraftDragClass.cast(dragon));
-		} catch (ClassCastException e) {//Dragon can not be cast from EntityEnderDragon to PetEnderDragon ! Dragon is broken! --> Reset!
-			resetNeeded=true;//dragon can't be casted anymore -> Reset is needed!!!
-		} catch (Exception e) {//Any other Error....
+		if (dragon instanceof EnderDragon) {
+			try {
+				Class<?> CraftDragClass = Class.forName("org.bukkit.craftbukkit."+nmsVersion+".entity.CraftEnderDragon");
+				PetEnderDragon petDragon = (PetEnderDragon) CraftDragClass.getDeclaredMethod("getHandle").invoke(CraftDragClass.cast(dragon));
+			} catch (ClassCastException e) {//Dragon can not be cast from EntityEnderDragon to PetEnderDragon ! Dragon is broken! --> Reset!
+				resetNeeded=true;//dragon can't be casted anymore -> Reset is needed!!!
+			} catch (Exception e) {//Any other Error....
+			}
 		}
 		return resetNeeded;
 	}

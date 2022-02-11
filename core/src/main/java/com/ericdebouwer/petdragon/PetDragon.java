@@ -3,12 +3,12 @@ package com.ericdebouwer.petdragon;
 import com.jeppa.config.DragonLocations;
 import com.ericdebouwer.petdragon.command.BaseCommand;
 import com.ericdebouwer.petdragon.config.ConfigManager;
+import com.ericdebouwer.petdragon.listeners.DragonListener;
+import com.ericdebouwer.petdragon.listeners.EntitiesLoadListener;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import java.util.logging.Level;
 
 
 public class PetDragon extends JavaPlugin {
@@ -59,8 +59,8 @@ public class PetDragon extends JavaPlugin {
 		new BaseCommand(this);
 
 		eggManager = new EggManager(this);
-		DragonListener dragonListener = new DragonListener(this);
-		getServer().getPluginManager().registerEvents(dragonListener, this);
+		getServer().getPluginManager().registerEvents(new DragonListener(this), this);
+		new EntitiesLoadListener(this);
 
 		if (configManager.collectMetrics) {
 			new Metrics(this, 13486);
@@ -93,5 +93,12 @@ public class PetDragon extends JavaPlugin {
 	
 	public EggManager getEggManager(){
 		return this.eggManager;
+	}
+	
+	//Jeppa: sub-version as int for some checks...
+	public int getSubVer() {
+		String packageName = this.getServer().getClass().getPackage().getName();
+		String nmsVersion = packageName.substring(packageName.lastIndexOf('.') + 1);
+		return Integer.parseInt(nmsVersion.substring(nmsVersion.indexOf("_")+1,(nmsVersion.lastIndexOf("_")))); 		
 	}
 }

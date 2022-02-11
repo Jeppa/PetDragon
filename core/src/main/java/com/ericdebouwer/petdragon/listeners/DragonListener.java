@@ -1,6 +1,9 @@
-package com.ericdebouwer.petdragon;
+package com.ericdebouwer.petdragon.listeners;
 
+import com.ericdebouwer.petdragon.PetDragon;
 import com.ericdebouwer.petdragon.api.DragonSwoopEvent;
+import com.jeppa.firebreath.FireBreath;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -18,22 +21,18 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EnderDragonChangePhaseEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerKickEvent;
-import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 import org.spigotmc.event.entity.EntityDismountEvent;
-
-import com.ericdebouwer.petdragon.enderdragonNMS.PetEnderDragon;
-import com.jeppa.firebreath.FireBreath;
 
 import java.util.Arrays;
 
@@ -59,23 +58,18 @@ public class DragonListener implements Listener {
 			plugin.getFactory().handleDragonReset(ent);
 		}
 	}
-	
-	
-	@EventHandler
-	public void onLoad(ChunkLoadEvent e){
-		Bukkit.getScheduler().runTaskLater(plugin, () -> {
-			if (!e.getChunk().isLoaded()) return;
 
-			for (Entity ent: e.getChunk().getEntities()){
-				//Jeppa: ONLY Reset Dragon if needed...
-				if (!plugin.getFactory().isPetDragon(ent)) continue;
-				EnderDragon dragon=(EnderDragon)ent;
-				if (plugin.getFactory().checkPetDragonBroken(dragon)) {
-					plugin.getFactory().handleDragonReset(ent);
-				}
-			}
-
-		}, 7); // WIP: see https://hub.spigotmc.org/jira/browse/SPIGOT-6547
+	@EventHandler //should never happen, just in case //Jeppa: additional event for dragon reset (else, if dragon has lost focus and gets attacked, it will fly to 0/0...)
+	public void onDragonChangePhase(EnderDragonChangePhaseEvent event){
+		EnderDragon dragon=event.getEntity(); //Info: working PetDragons don't return a location here!? -> dragon.getLocation() results in 0/0/0 !
+		if (!plugin.getFactory().isPetDragon(dragon)) return;
+//		Phase phase = event.getNewPhase();
+		Phase oldPhase=event.getCurrentPhase();
+		if (oldPhase.equals(Phase.HOVER)){ //dragon tries to break free ;)
+			event.setCancelled(true);
+			dragon.setPhase(Phase.HOVER);
+			plugin.getFactory().handleDragonReset(dragon);
+		}
 	}
 
 
@@ -157,20 +151,8 @@ public class DragonListener implements Listener {
 		EnderDragon dragon=(EnderDragon)event.getEntity();
 		plugin.getLocationManager().remLocation(plugin.getFactory().getOwner(dragon), dragon.getLocation());//should work, if the dragon is not moving right now :)
 	}
-	
-	@EventHandler //Jeppa: additional event for dragon reset (else, if dragon has lost focus and gets attacked, it will fly to 0/0...)
-	public void onDragonChangePhase(EnderDragonChangePhaseEvent event){
-		EnderDragon dragon=event.getEntity(); //Info: working PetDragons don't return a location here!? -> dragon.getLocation() results in 0/0/0 !
-		if (!plugin.getFactory().isPetDragon(dragon)) return;
-		Phase phase = event.getNewPhase();
-		Phase oldPhase=event.getCurrentPhase();
-		if (oldPhase.equals(Phase.HOVER)){ //dragon tries to break free ;)
-			event.setCancelled(true);
-			dragon.setPhase(Phase.HOVER);
-			plugin.getFactory().handleDragonReset(dragon);
-		}
-	}
 
+	
 	/** Here starts the Code added by Jeppa to implement FireBreath! */
 	@EventHandler
 	public void noDropFiretems(PlayerDropItemEvent event){
@@ -233,4 +215,5 @@ public class DragonListener implements Listener {
 			fireball.setShooter(player);
 		});
 	}
+
 }

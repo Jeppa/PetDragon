@@ -6,13 +6,13 @@ import com.google.common.collect.ImmutableMap;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Player;
 
-import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 
@@ -51,7 +51,11 @@ public class LocateCmd extends SubCommand {
 	                TextComponent message = new TextComponent(text);
 //	                message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/" + BaseCommand.NAME + " remove " + dragon.getUniqueId())); //'old' method by UUID, but UUID does not survive chunk reloads.. :(
 	                message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/" + BaseCommand.NAME + " remove " + loc.getWorld().getName() + " " +loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ()));//Jeppa: new method using the location to find a dragon
-	                message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, TextComponent.fromLegacyText(configManager.parseMessage(Message.LOCATED_HOVER, null))));
+	                if (plugin.getSubVer()>=17) {//Jeppa: keep compatibility to old versions...(deprecated...)
+	                	message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(configManager.parseMessage(Message.LOCATED_HOVER, null))));
+	                } else {
+	                	message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, TextComponent.fromLegacyText(configManager.parseMessage(Message.LOCATED_HOVER, null))));
+	                }
 	                player.spigot().sendMessage(message);
 	            }else {
 	                player.sendMessage(text);
