@@ -3,6 +3,7 @@ package com.ericdebouwer.petdragon;
 import com.ericdebouwer.petdragon.config.Message;
 import com.ericdebouwer.petdragon.enderdragonNMS.PetEnderDragon;
 import com.google.common.collect.ImmutableMap;
+import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
@@ -15,6 +16,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.lang.reflect.InvocationTargetException;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -24,17 +27,16 @@ public class DragonFactory {
 	
 	PetDragon plugin;
 	Class<?> dragonClass;
+	@Getter
 	private final boolean correctVersion;
-	public NamespacedKey ownerKey;
+	private final NamespacedKey ownerKey;
+	private final NamespacedKey dragonIdKey;
 
 	public DragonFactory(PetDragon plugin){
 		this.plugin = plugin;
 		this.ownerKey = new NamespacedKey(plugin, PetEnderDragon.OWNER_ID);
+		this.dragonIdKey = new NamespacedKey(plugin, PetEnderDragon.DRAGON_ID);
 		this.correctVersion = this.setUpDragonClass();
-	}
-	
-	public boolean isCorrectVersion(){
-		return correctVersion;
 	}
 	
 	String nmsVersion; //make it usable from outside.. :)
@@ -61,16 +63,16 @@ public class DragonFactory {
 	}
 
 	public PetEnderDragon create(Location loc, UUID owner){
-		return this.create(loc, owner, false);
-	}
-	
-	private PetEnderDragon create(Location loc, UUID owner, boolean replace){ //'replace' is obsolete... 
 		try {
 			PetEnderDragon dragon = (PetEnderDragon) dragonClass.getConstructor(Location.class, PetDragon.class).newInstance(loc, plugin);
+
+			if (!dragon.getEntity().getPersistentDataContainer().has(dragonIdKey, PersistentDataType.STRING)) {
+				dragon.getEntity().getPersistentDataContainer().set(dragonIdKey, PersistentDataType.STRING, dragon.getEntity().getUniqueId().toString());
+			}
 			if (owner != null){
 				dragon.getEntity().getPersistentDataContainer().set(ownerKey, PersistentDataType.STRING, owner.toString());
 				//Jeppa: Save dragon location to file
-				plugin.getLocationManager().addLocation(owner, loc);
+				plugin.getDragonLocations().addLocation(owner, loc);
 			}
 			return dragon;
 		} catch (Exception e){
@@ -82,7 +84,7 @@ public class DragonFactory {
 	public boolean isPetDragon(Entity ent){
 		if (!(ent instanceof EnderDragon)) return false;
 		boolean isPet=ent.getScoreboardTags().contains(PetEnderDragon.DRAGON_ID);
-		//check for existing owner...(if Tag fails...should never happen...)
+		//check for existing owner...(if Tag fails...what never should happen...)
 		if (!isPet) {
 			isPet=ent.getPersistentDataContainer().has(ownerKey, PersistentDataType.STRING);
 		}
@@ -90,7 +92,7 @@ public class DragonFactory {
 	}
 	
 	public boolean canDamage(HumanEntity player, PetEnderDragon dragon){
-		UUID owner = this.getOwner(dragon.getEntity());
+		UUID owner = getOwner(dragon.getEntity());
 		if (owner == null) return true;
 		if (owner.equals(player.getUniqueId())) return player.hasPermission("petdragon.hurt.self");
 		return player.hasPermission("petdragon.hurt.others");
@@ -119,27 +121,17 @@ public class DragonFactory {
 			handleDragonReset(dragon);
 		}
 		//Jeppa: remove saved location from file...
-		plugin.getLocationManager().remLocation(owner, dragon.getLocation());
+		plugin.getDragonLocations().remLocation(owner, dragon.getLocation());
 		
 		return true;
 	}
 	
-	public void reloadDragons(){ //by command
-		for (World w: Bukkit.getWorlds()){
-			for (EnderDragon dragon: w.getEntitiesByClass(EnderDragon.class)){
-				plugin.getFactory().handleDragonReset(dragon);
-			}
-		}
-	}
-
 	public void handleDragonReset(Entity ent){
 		if (!isPetDragon(ent)) return;
 		EnderDragon dragon = (EnderDragon) ent;
-
 		List<Entity> passengers = dragon.getPassengers();
-//		dragon.remove();
 
-		PetEnderDragon petDragon = this.create(dragon.getLocation(), null, true); //true -> obsolete!!
+		PetEnderDragon petDragon = this.create(dragon.getLocation(), null);
 		petDragon.copyFrom(dragon);
 		double health=dragon.getHealth();
 		dragon.remove();
@@ -161,12 +153,16 @@ public class DragonFactory {
 		return result;
 	}
 
-	public UUID getOwner(EnderDragon dragon){
-		if (!dragon.getPersistentDataContainer().has(ownerKey, PersistentDataType.STRING)) return null;
+	public UUID getKeyFromDragon(EnderDragon dragon, NamespacedKey key) {
+		if (!dragon.getPersistentDataContainer().has(key, PersistentDataType.STRING)) return null;
 		
-		String uuidText = dragon.getPersistentDataContainer().get(ownerKey, PersistentDataType.STRING);
+		String uuidText = dragon.getPersistentDataContainer().get(key, PersistentDataType.STRING);
 		if (uuidText == null || uuidText.equals("")) return null;
 		return UUID.fromString(uuidText);
+	}
+
+	public @Nullable UUID getOwner(EnderDragon dragon){
+		return getKeyFromDragon(dragon, ownerKey);
 	}
 
 	//Jeppa: Check if dragon needs a reset...

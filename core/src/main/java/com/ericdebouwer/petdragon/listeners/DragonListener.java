@@ -3,6 +3,7 @@ package com.ericdebouwer.petdragon.listeners;
 import com.ericdebouwer.petdragon.PetDragon;
 import com.ericdebouwer.petdragon.api.DragonSwoopEvent;
 import com.jeppa.firebreath.FireBreath;
+import lombok.RequiredArgsConstructor;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -36,13 +37,14 @@ import org.spigotmc.event.entity.EntityDismountEvent;
 
 import java.util.Arrays;
 
+@RequiredArgsConstructor
 public class DragonListener implements Listener {
 	
-	PetDragon plugin;
+	private final PetDragon plugin;
 	
-	public DragonListener(PetDragon plugin){
-		this.plugin = plugin;
-	}
+//	public DragonListener(PetDragon plugin){
+//		this.plugin = plugin;
+//	}
 	
 	@EventHandler
 	public void onJoin(PlayerJoinEvent e){
@@ -92,7 +94,7 @@ public class DragonListener implements Listener {
 		}
 
 		if (!plugin.getFactory().isPetDragon(damager)) return;
-		if (!plugin.getConfigManager().damageEntities) e.setCancelled(true);
+		if (!plugin.getConfigManager().isDamageEntities()) e.setCancelled(true);
 		if (!(e.getEntity() instanceof Player)) return;
 		
 		Player player = (Player) e.getEntity();
@@ -121,7 +123,7 @@ public class DragonListener implements Listener {
 		player.setNoDamageTicks(150);
 		//Jeppa: save dragon's location to file ...
 		EnderDragon dragon=(EnderDragon)e.getDismounted();
-		plugin.getLocationManager().addLocation(plugin.getFactory().getOwner(dragon), dragon.getLocation()); //not UUID of player, but of owner...
+		plugin.getDragonLocations().addLocation(plugin.getFactory().getOwner(dragon), dragon.getLocation()); //not UUID of player, but of owner...
 	}
 	
 	@EventHandler
@@ -136,7 +138,7 @@ public class DragonListener implements Listener {
 	public void interact(PlayerInteractEntityEvent e){
 		if (e.getHand() != EquipmentSlot.HAND) return; //prevent double firing
 		
-		if (!plugin.getConfigManager().rightClickRide) return;
+		if (!plugin.getConfigManager().isRightClickRide()) return;
 		if (!(e.getRightClicked() instanceof EnderDragonPart)) return;
 		
 		EnderDragonPart part = (EnderDragonPart) e.getRightClicked();
@@ -149,7 +151,7 @@ public class DragonListener implements Listener {
 		if (!plugin.getFactory().isPetDragon(event.getEntity())) return;
 		// remove saved location from file...
 		EnderDragon dragon=(EnderDragon)event.getEntity();
-		plugin.getLocationManager().remLocation(plugin.getFactory().getOwner(dragon), dragon.getLocation());//should work, if the dragon is not moving right now :)
+		plugin.getDragonLocations().remLocation(plugin.getFactory().getOwner(dragon), dragon.getLocation());//should work, if the dragon is not moving right now :)
 	}
 
 	
@@ -177,10 +179,10 @@ public class DragonListener implements Listener {
 			//test for item:
 			boolean itemFound=false;
 			if (item!=null) {
-				if(ballsPerm && item.getType().equals(Material.valueOf(plugin.getConfigManager().breathMat))){//breathMat is for FireBall!
+				if(ballsPerm && item.getType().equals(Material.valueOf(plugin.getConfigManager().getBreathMat()))){//breathMat is for FireBall!
 					itemFound=true;
 					fireTheBall(vehicle,player);
-				} else if(breathPerm && item.getType().equals(Material.valueOf(plugin.getConfigManager().firebreathMat))){
+				} else if(breathPerm && item.getType().equals(Material.valueOf(plugin.getConfigManager().getFirebreathMat()))){
 					itemFound=true;
 					fireTheBreath(player);
 				}

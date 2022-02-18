@@ -4,25 +4,28 @@ import com.jeppa.config.DragonLocations;
 import com.ericdebouwer.petdragon.command.BaseCommand;
 import com.ericdebouwer.petdragon.config.ConfigManager;
 import com.ericdebouwer.petdragon.listeners.DragonListener;
+import com.ericdebouwer.petdragon.listeners.EggListener;
 import com.ericdebouwer.petdragon.listeners.EntitiesLoadListener;
+import lombok.Getter;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
 
 
+@Getter
 public class PetDragon extends JavaPlugin {
 	
 	// SUPPORTED:
-	// 1.18z
+	// 1.18, 1.18.1
 	// 1.17, 1.17.1
 	// 1.16, 1.16.1, 1.16.2, 1.16.3, 1.16.4, 1.16.5 (tested)
 	// 1.15, 1.15.1 (not tested), 1.15.2 (1.15-R1)
 	// 1.14.4, 1.14.x (not tested)
 
 	private ConfigManager configManager;
-	private DragonFactory dragonFactory;
-	private EggManager eggManager;
+	private DragonFactory factory;
+	private CustomItems customItems;
 	
 	private DragonLocations dragonLocations; //for remembering the dragons locations...
 	
@@ -30,9 +33,9 @@ public class PetDragon extends JavaPlugin {
 	public void onEnable() {
 		String logPrefix = "[" + this.getName() + "] ";
 
-		this.dragonFactory = new DragonFactory(this);
+		this.factory = new DragonFactory(this);
 		
-		if (!dragonFactory.isCorrectVersion()){
+		if (!factory.isCorrectVersion()){ //... autoreplaced by lombok.Getter!
 			getServer().getConsoleSender().sendMessage(ChatColor.BOLD + "" +ChatColor.RED + logPrefix + "Unsupported minecraft version! Check the download page for supported versions!");
 			getServer().getConsoleSender().sendMessage(ChatColor.BOLD + "" +ChatColor.RED + logPrefix + "Plugin will disable to prevent crashing!");
 			return;
@@ -47,7 +50,7 @@ public class PetDragon extends JavaPlugin {
 		}
 		getLogger().info("Configuration has been successfully loaded!");
 
-		this.dragonLocations = new DragonLocations(this);					//Jeppa: added to have saved Locations
+		this.dragonLocations = new DragonLocations(this);	//Jeppa: added to have saved Locations
 		getServer().getScheduler().scheduleSyncDelayedTask(this, () -> {
 			this.dragonLocations.getDragonLocations(); //init! -> has to be delayed, because of not yet loaded worlds...
 		});
@@ -58,15 +61,17 @@ public class PetDragon extends JavaPlugin {
 
 		new BaseCommand(this);
 
-		eggManager = new EggManager(this);
+		customItems = new CustomItems(this);
+
+		getServer().getPluginManager().registerEvents(new EggListener(this), this);
 		getServer().getPluginManager().registerEvents(new DragonListener(this), this);
 		new EntitiesLoadListener(this);
 
-		if (configManager.collectMetrics) {
+		if (configManager.isCollectMetrics()) {
 			new Metrics(this, 13486);
 		}
 		
-		if (configManager.checkUpdates) {
+		if (configManager.isCheckUpdates()) {
 			new UpdateChecker(this)
 				.onStart(() -> getLogger().info("Checking for updates..."))
 				.onError(() -> getLogger().warning("Failed to check for updates!"))
@@ -77,22 +82,6 @@ public class PetDragon extends JavaPlugin {
 				.onNoUpdate(() -> getLogger().info("You are running the latest version."))
 			.run();
 		}
-	}
-	
-	public ConfigManager getConfigManager() {
-		return this.configManager;
-	}
-
-	public DragonLocations getLocationManager() {
-		return this.dragonLocations;
-	}
-
-	public DragonFactory getFactory(){
-		return this.dragonFactory;
-	}
-	
-	public EggManager getEggManager(){
-		return this.eggManager;
 	}
 	
 	//Jeppa: sub-version as int for some checks...

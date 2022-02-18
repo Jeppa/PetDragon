@@ -88,7 +88,7 @@ public class RemoveCmd extends SubCommand {
                 if (plugin.getFactory().isPetDragon(potentialDragon)){
 
                 	Location dragLoc2=potentialDragon.getLocation().getBlock().getLocation();
-                    plugin.getLocationManager().remLocation(owner, dragLoc2);
+                    plugin.getDragonLocations().remLocation(owner, dragLoc2);
                     
                     potentialDragon.remove();
                     found = true;
@@ -111,7 +111,7 @@ public class RemoveCmd extends SubCommand {
         				return;// true;
         			}
         			//Jeppa: remove dragon Location from File...
-        			plugin.getLocationManager().remLocation(owner_, dragon.getLocation());
+        			plugin.getDragonLocations().remLocation(owner_, dragon.getLocation());
                 
         			dragon.remove();
         			found = true;

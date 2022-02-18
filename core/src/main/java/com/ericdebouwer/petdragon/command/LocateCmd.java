@@ -30,7 +30,7 @@ public class LocateCmd extends SubCommand {
         //Jeppa: 1st check all saved Locations if they are still valid and have dragons...
         UUID uuid = player.getUniqueId();
         //Collection<Location> locationList = //may be used....
-        		plugin.getLocationManager().getLocationList(uuid); //returns a list with valid Locations for this player! (after the list has been checked... and the chunks have been activated!)
+        		plugin.getDragonLocations().getLocationList(uuid); //returns a list with valid Locations for this player! (after the list has been checked... and the chunks have been activated!)
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
 
 		//now go on with main function...
@@ -43,11 +43,11 @@ public class LocateCmd extends SubCommand {
 	        configManager.sendMessage(player, Message.LOCATED_DRAGONS, ImmutableMap.of("amount", "" + dragons.size()));
 	        for (EnderDragon dragon: dragons){
 	            Location loc = dragon.getLocation();
-	            plugin.getLocationManager().addLocation(uuid, loc.getBlock().getLocation()); //Jeppa: (re)adds a location if it's missing in the list... (This tries 'fixing' the Entity Bug in MC 1.17/1.18 under Paper... NOT 100% )
+	            plugin.getDragonLocations().addLocation(uuid, loc.getBlock().getLocation()); //Jeppa: (re)adds a location if it's missing in the list... (This tries 'fixing' the Entity Bug in MC 1.17/1.18 under Paper... NOT 100% )
 	            String text = configManager.parseMessage(Message.LOCATE_ONE, ImmutableMap.of("x", "" +loc.getBlockX(),
 	                    "y", "" + loc.getBlockY(), "z", "" + loc.getBlockZ(), "world", loc.getWorld().getName()));
 	
-	            if (configManager.clickToRemove) {
+	            if (configManager.isClickToRemove()) {
 	                TextComponent message = new TextComponent(text);
 //	                message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/" + BaseCommand.NAME + " remove " + dragon.getUniqueId())); //'old' method by UUID, but UUID does not survive chunk reloads.. :(
 	                message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/" + BaseCommand.NAME + " remove " + loc.getWorld().getName() + " " +loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ()));//Jeppa: new method using the location to find a dragon
