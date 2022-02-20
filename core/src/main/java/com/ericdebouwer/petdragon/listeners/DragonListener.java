@@ -29,6 +29,7 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerKickEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -36,6 +37,7 @@ import org.bukkit.util.Vector;
 import org.spigotmc.event.entity.EntityDismountEvent;
 
 import java.util.Arrays;
+import java.util.List;
 
 @RequiredArgsConstructor
 public class DragonListener implements Listener {
@@ -215,6 +217,37 @@ public class DragonListener implements Listener {
 		loc.getWorld().spawn(loc.add(forwardDir.clone().multiply(10).setY(-1)), DragonFireball.class, fireball -> {
 			fireball.setDirection(forwardDir);
 			fireball.setShooter(player);
+		});
+	}
+	
+	//Event to check if player is changing worlds while riding a dragon
+	//Sadly PlayerChangedWorldEvent can't be used, as the player is not riding anymore when event fires... :/
+	//Teleport Event can be used instead...
+	@EventHandler(priority = EventPriority.LOWEST)	
+	public void onPlayerTeleport(PlayerTeleportEvent e) {
+		Player p = e.getPlayer();
+		onPlayerTeleportOrWorldchange(p);
+	}
+	
+	private void onPlayerTeleportOrWorldchange(Player p) {
+		Entity ent;
+		if (p.isInsideVehicle()) ent = p.getVehicle();
+		else return;
+		if (!plugin.getFactory().isPetDragon(ent)) return;
+		
+		Location oldLocation = ent.getLocation().getBlock().getLocation();
+		Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+			List<Entity> passengers = ent.getPassengers();
+			if (!passengers.contains(p)) {
+				ent.teleport(p);
+				ent.addPassenger(p);
+			}
+			Location newLocation = ent.getLocation().getBlock().getLocation();
+			plugin.getFactory().handleDragonReset(ent);
+			Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+				plugin.getDragonLocations().remLocation(p.getUniqueId(), newLocation);//dragonreset results in new dragon (spawn) -> remove that location from file...
+				plugin.getDragonLocations().remLocation(p.getUniqueId(), oldLocation);//dismounting from dragon results in saving the location -> remove that location from file, too...
+			},5);
 		});
 	}
 

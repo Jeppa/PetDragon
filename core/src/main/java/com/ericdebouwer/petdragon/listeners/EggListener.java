@@ -104,7 +104,7 @@ public class EggListener implements Listener {
 	
 	@EventHandler
 	public void dontTouchTheEgg(PlayerInteractEvent event){
-		if (event.getClickedBlock().hasMetadata("isPetEgg")){ //Block has temporary meta -> it is placed egg for hatching...
+		if (event.getClickedBlock()!=null && event.getClickedBlock().hasMetadata("isPetEgg")){ //Block has temporary meta -> it is placed egg for hatching...
 			event.setCancelled(true);
 		}
 	}
