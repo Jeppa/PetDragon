@@ -56,7 +56,12 @@ public class ConfigManager {
 	private boolean fireOnJump;
 	private String breathMat;
 	private String firebreathMat;
-
+//	world teleport values:
+	private double worldSource_y;
+	private double endDest_y;
+	private double endSource_y;
+	private double worldDest_y;
+	private boolean worldTeleport;
 	
 	public ConfigManager(PetDragon plugin) {
 		this.plugin = plugin;
@@ -122,6 +127,12 @@ public class ConfigManager {
 		fireOnJump = plugin.getConfig().getBoolean("fire-on-jump", true);
 		breathMat = plugin.getConfig().getString("breath-material", "ENDER_PEARL");
 		firebreathMat = plugin.getConfig().getString("fire-breath-material", "FIRE_CHARGE");
+		
+		worldSource_y = plugin.getConfig().getDouble("overworld-teleport-source-hight", 320);
+		endDest_y = plugin.getConfig().getDouble("endworld-teleport-dest-hight", 65);
+		endSource_y = plugin.getConfig().getDouble("endworld-teleport-source-hight", -5);
+		worldDest_y = plugin.getConfig().getDouble("overworld-teleport-dest-hight", 300);
+		worldTeleport = plugin.getConfig().getBoolean("enable-world-teleport",true);
 	}
 	
 	public String parseMessage(Message message, ImmutableMap<String, String> replacements) {

@@ -80,6 +80,14 @@ breath-material: ENDER_PEARL
 # Whether PetDragon spawn eggs will be used up even in gamemodes like creative
 always-use-up-egg: true
 
+# The following values represent the y-level for teleporting to or from the end
+# e.g. when flying over a hight of 320 the player and dragon wil get teleportet to the end
+overworld-teleport-source-hight: 320
+endworld-teleport-dest-hight: 65
+endworld-teleport-source-hight: -5
+overworld-teleport-dest-hight: 300
+enable-world-teleport: true
+
 messages:
    no-command-permission: "§l§cSorry§r§7, you don't have permission to use that command!"
    no-ride-permission: "§l§cSorry§r§7, you don't have permission to ride dragons!"

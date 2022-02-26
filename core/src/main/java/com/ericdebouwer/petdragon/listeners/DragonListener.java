@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.entity.AreaEffectCloud;
 import org.bukkit.entity.DragonFireball;
 import org.bukkit.entity.EnderDragon;
@@ -29,6 +30,7 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerKickEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -249,6 +251,37 @@ public class DragonListener implements Listener {
 				plugin.getDragonLocations().remLocation(p.getUniqueId(), oldLocation);//dismounting from dragon results in saving the location -> remove that location from file, too...
 			},5);
 		});
+	}
+
+	//Jeppa: New world-change function, original idea from SwagSteve's plugin EndDirect...
+	//world names are automaticaly generated! --> End-World MUST be named "[baseworld]_the_end"
+	//here the PlayerMoveEvent is used by dragon too (triggert in NMS...)
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onPlayerMoves(PlayerMoveEvent e) {
+		Player p = e.getPlayer();
+		if (p.isInsideVehicle()) {
+			if (plugin.getFactory().isPetDragon(p.getVehicle())) {
+				e.setCancelled(true); //player should NOT be punished for floating etc...
+			}
+		}
+		Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(plugin, () -> moveEvent(p,e.getTo())); 
+	}
+    //common part, may be used from other events in the future...
+	private void moveEvent(Player p, Location getTo) {
+        if (plugin.getConfigManager().isWorldTeleport()) {
+        	double y = getTo.getY();
+        	if (y >= plugin.getConfigManager().getWorldSource_y()) {
+        		if (p.getWorld().getEnvironment().toString().toLowerCase().equals("normal")){
+            		World endWorld = Bukkit.getServer().getWorld(p.getWorld().getName()+"_the_end");//create endname from baseworld
+            		p.teleport(new Location(endWorld, getTo.getX(), plugin.getConfigManager().getEndDest_y(), getTo.getZ()));
+        		}
+        	} else if (y <= plugin.getConfigManager().getEndSource_y()) {
+        		if (p.getWorld().getEnvironment().toString().toLowerCase().equals("the_end")){
+            		World baseWorld = Bukkit.getServer().getWorld(p.getWorld().getName().replace("_the_end", ""));//create basename from endworld
+            		p.teleport(new Location(baseWorld, getTo.getX(), plugin.getConfigManager().getWorldDest_y(), getTo.getZ()));
+        		}
+        	}
+        }
 	}
 
 }

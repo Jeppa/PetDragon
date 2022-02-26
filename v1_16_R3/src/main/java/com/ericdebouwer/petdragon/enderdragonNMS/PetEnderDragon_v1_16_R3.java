@@ -41,12 +41,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.List;
-
+import lombok.Getter;
+import lombok.Setter;
 
 public class PetEnderDragon_v1_16_R3 extends EntityEnderDragon implements PetEnderDragon {
 
 	private PetDragon plugin;
 	Location loc;
+	@Getter @Setter
+	private Location lastLocation;
 
 	static Field jumpField;
 	static Method checkWalls;
@@ -279,6 +282,9 @@ public class PetEnderDragon_v1_16_R3 extends EntityEnderDragon implements PetEnd
 		}
 		EntityHuman rider = (EntityHuman) this.passengers.get(0);
 
+		//Jeppa: Add saving of last location and calling the MoveEvent!
+		tickEvent((org.bukkit.entity.Player)rider.getBukkitEntity());
+	    
 		Vector forwardDir = rider.getBukkitEntity().getLocation().getDirection();
 		
 		if (rider.getBukkitEntity().hasPermission("petdragon.shoot") && jumpField != null){

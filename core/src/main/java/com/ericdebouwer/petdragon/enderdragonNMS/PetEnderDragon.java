@@ -1,7 +1,11 @@
 package com.ericdebouwer.petdragon.enderdragonNMS;
 
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.EnderDragon;
+import org.bukkit.entity.Player;
+import org.bukkit.event.player.PlayerMoveEvent;
 
 public interface PetEnderDragon {
 	
@@ -23,5 +27,22 @@ public interface PetEnderDragon {
 	void spawn();
 
 	EnderDragon getEntity();
+
+	//Jeppa: Add saving of last location and calling the DragonMoveEvent! (PlayerMoveEvent)
+	Location getLastLocation();
+	
+	void setLastLocation(Location loc);
+	
+	default void tickEvent(Player rider){
+		Location newLoc = rider.getLocation();
+		if (getLastLocation() != null) {
+			if (!getLastLocation().equals(newLoc)) {
+				PlayerMoveEvent event = new PlayerMoveEvent(rider, getLastLocation(), newLoc); 
+				Bukkit.getPluginManager().callEvent(event);
+				setLastLocation(newLoc);
+			}
+	    } else setLastLocation(newLoc);
+	}
+
 	
 }
