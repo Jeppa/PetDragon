@@ -8,6 +8,7 @@
     <modules>
         <module>core</module>
         <module>dist</module>
+        <module>v1_18_R2</module>
         <module>v1_18_R1</module>
         <module>v1_17_R1_2</module>
         <module>v1_17_R1</module>
@@ -37,7 +38,7 @@
     </build>
 
     <properties>
-        <revision>1.5.3_Jeppa</revision>
+        <revision>1.5.4_Jeppa</revision>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
