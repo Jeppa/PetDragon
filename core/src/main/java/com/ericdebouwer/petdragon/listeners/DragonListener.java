@@ -9,6 +9,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.World.Environment;
 import org.bukkit.entity.AreaEffectCloud;
 import org.bukkit.entity.DragonFireball;
 import org.bukkit.entity.EnderDragon;
@@ -25,6 +26,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -35,6 +37,7 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
 import org.spigotmc.event.entity.EntityDismountEvent;
 
@@ -46,39 +49,6 @@ public class DragonListener implements Listener {
 	
 	private final PetDragon plugin;
 	
-//	public DragonListener(PetDragon plugin){
-//		this.plugin = plugin;
-//	}
-	
-	@EventHandler
-	public void onJoin(PlayerJoinEvent e){
-		Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-			Entity vehicle = e.getPlayer().getVehicle();
-			plugin.getFactory().handleDragonReset(vehicle);
-		});
-	}
-	
-	@EventHandler
-	public void worldLoad(WorldLoadEvent e){
-		for (Entity ent: e.getWorld().getEntitiesByClass(EnderDragon.class)){
-			plugin.getFactory().handleDragonReset(ent);
-		}
-	}
-
-	@EventHandler //should never happen, just in case //Jeppa: additional event for dragon reset (else, if dragon has lost focus and gets attacked, it will fly to 0/0...)
-	public void onDragonChangePhase(EnderDragonChangePhaseEvent event){
-		EnderDragon dragon=event.getEntity(); //Info: working PetDragons don't return a location here!? -> dragon.getLocation() results in 0/0/0 !
-		if (!plugin.getFactory().isPetDragon(dragon)) return;
-//		Phase phase = event.getNewPhase();
-		Phase oldPhase=event.getCurrentPhase();
-		if (oldPhase.equals(Phase.HOVER)){ //dragon tries to break free ;)
-			event.setCancelled(true);
-			dragon.setPhase(Phase.HOVER);
-			plugin.getFactory().handleDragonReset(dragon);
-		}
-	}
-
-
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	public void onSwoop(DragonSwoopEvent event){
 		if (!(event.getTarget() instanceof Player)) return;
@@ -245,7 +215,7 @@ public class DragonListener implements Listener {
 				ent.addPassenger(p);
 			}
 			Location newLocation = ent.getLocation().getBlock().getLocation();
-			plugin.getFactory().handleDragonReset(ent);
+			plugin.getFactory().resetDragon((EnderDragon)ent);
 			Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(plugin, () -> {
 				plugin.getDragonLocations().remLocation(p.getUniqueId(), newLocation);//dragonreset results in new dragon (spawn) -> remove that location from file...
 				plugin.getDragonLocations().remLocation(p.getUniqueId(), oldLocation);//dismounting from dragon results in saving the location -> remove that location from file, too...

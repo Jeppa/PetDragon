@@ -2,9 +2,13 @@ package com.ericdebouwer.petdragon.enderdragonNMS;
 
 import com.ericdebouwer.petdragon.PetDragon;
 import com.ericdebouwer.petdragon.api.DragonSwoopEvent;
+import com.mojang.datafixers.DataFixUtils;
+import com.mojang.datafixers.types.Type;
 import net.minecraft.server.v1_16_R3.AxisAlignedBB;
 import net.minecraft.server.v1_16_R3.BlockPosition;
 import net.minecraft.server.v1_16_R3.DamageSource;
+import net.minecraft.server.v1_16_R3.DataConverterRegistry;
+import net.minecraft.server.v1_16_R3.DataConverterTypes;
 import net.minecraft.server.v1_16_R3.Entity;
 import net.minecraft.server.v1_16_R3.EntityComplexPart;
 import net.minecraft.server.v1_16_R3.EntityEnderDragon;
@@ -12,13 +16,17 @@ import net.minecraft.server.v1_16_R3.EntityHuman;
 import net.minecraft.server.v1_16_R3.EntityLiving;
 import net.minecraft.server.v1_16_R3.EntityPlayer;
 import net.minecraft.server.v1_16_R3.EntityTypes;
+import net.minecraft.server.v1_16_R3.EnumCreatureType;
 import net.minecraft.server.v1_16_R3.EnumMoveType;
 import net.minecraft.server.v1_16_R3.IEntitySelector;
+import net.minecraft.server.v1_16_R3.IRegistry;
 import net.minecraft.server.v1_16_R3.MathHelper;
+import net.minecraft.server.v1_16_R3.MinecraftKey;
 import net.minecraft.server.v1_16_R3.MinecraftServer;
 import net.minecraft.server.v1_16_R3.NBTTagCompound;
 import net.minecraft.server.v1_16_R3.PacketPlayOutWorldEvent;
 import net.minecraft.server.v1_16_R3.Particles;
+import net.minecraft.server.v1_16_R3.SharedConstants;
 import net.minecraft.server.v1_16_R3.SoundEffects;
 import net.minecraft.server.v1_16_R3.Vec3D;
 import net.minecraft.server.v1_16_R3.World;
@@ -27,13 +35,13 @@ import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.craftbukkit.v1_16_R3.CraftWorld;
 import org.bukkit.craftbukkit.v1_16_R3.entity.CraftEnderDragon;
-import org.bukkit.craftbukkit.v1_16_R3.entity.CraftEntity;
 import org.bukkit.craftbukkit.v1_16_R3.entity.CraftLivingEntity;
 import org.bukkit.entity.DragonFireball;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
+import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
 
 import java.lang.reflect.Field;
@@ -41,13 +49,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+
 import lombok.Getter;
 import lombok.Setter;
 
 public class PetEnderDragon_v1_16_R3 extends EntityEnderDragon implements PetEnderDragon {
 
-	private PetDragon plugin;
-	Location loc;
 	@Getter @Setter
 	private Location lastLocation;
 
@@ -55,7 +63,17 @@ public class PetEnderDragon_v1_16_R3 extends EntityEnderDragon implements PetEnd
 	static Method checkWalls;
 	static Method checkCrystals;
 	static {
+		MinecraftKey mcKey = new MinecraftKey(PetEnderDragon.ENTITY_ID);
 		try {
+			if (!IRegistry.ENTITY_TYPE.getOptional(mcKey).isPresent()) {
+				@SuppressWarnings("unchecked")
+				Map<String, Type<?>> types = (Map<String, Type<?>>) DataConverterRegistry.a().getSchema(
+						DataFixUtils.makeKey(SharedConstants.getGameVersion().getWorldVersion()))
+						.findChoiceType(DataConverterTypes.ENTITY).types();
+				types.put(mcKey.toString(), types.get(IRegistry.ENTITY_TYPE.getKey(EntityTypes.ENDER_DRAGON).toString()));
+				IRegistry.a(IRegistry.ENTITY_TYPE, PetEnderDragon.ENTITY_ID,
+						EntityTypes.Builder.a(PetEnderDragon_v1_16_R3::new, EnumCreatureType.MONSTER).a().a(PetEnderDragon.ENTITY_ID));
+			}
 			jumpField = EntityLiving.class.getDeclaredField("jumping");
 			jumpField.setAccessible(true);
 			checkWalls = EntityEnderDragon.class.getDeclaredMethod("b", AxisAlignedBB.class);
@@ -66,23 +84,22 @@ public class PetEnderDragon_v1_16_R3 extends EntityEnderDragon implements PetEnd
 		}
 	}
 
+	private final PetDragon plugin;
 	private long lastShot;
 	private boolean didMove;
 	int growlTicks = 100;
 
 	public PetEnderDragon_v1_16_R3(EntityTypes<? extends EntityEnderDragon> entitytypes, World world) {
-		super(EntityTypes.ENDER_DRAGON, world);
+		this(world.getWorld());
 	}
 	
-	public PetEnderDragon_v1_16_R3(Location loc, PetDragon plugin){
-		super(null, ((CraftWorld)loc.getWorld()).getHandle());
-		this.plugin = plugin;
-		this.loc = loc;
+	public PetEnderDragon_v1_16_R3(org.bukkit.World world) {
+		super(EntityTypes.ENDER_DRAGON, ((CraftWorld)world).getHandle());
+		this.plugin = JavaPlugin.getPlugin(PetDragon.class);
 
 		this.setupDefault();
 		this.getBukkitEntity().setSilent(plugin.getConfigManager().isSilent());
 		this.noclip = plugin.getConfigManager().isFlyThroughBlocks();
-		this.setPosition(loc.getX(), loc.getY(), loc.getZ());
 	}
 	
 	@Override
@@ -98,8 +115,9 @@ public class PetEnderDragon_v1_16_R3 extends EntityEnderDragon implements PetEnd
 	}
 
 	@Override
-	public void spawn() {
-		((CraftWorld)loc.getWorld()).getHandle().addEntity(this, SpawnReason.CUSTOM);
+	public void spawn(Vector location) {
+		this.setPosition(location.getX(), location.getY(), location.getZ());
+		this.world.addEntity(this, CreatureSpawnEvent.SpawnReason.CUSTOM);
 	}
 	
 	@Override
@@ -118,6 +136,12 @@ public class PetEnderDragon_v1_16_R3 extends EntityEnderDragon implements PetEnd
 		return true;
 	}
 		
+	@Override
+	public boolean d(NBTTagCompound nbttagcompound) {
+		boolean result = super.d(nbttagcompound);
+		nbttagcompound.setString("id", PetEnderDragon.ENTITY_ID);
+		return result;
+	}
 	
 	@Override
 	public boolean a(EntityComplexPart entitycomplexpart, DamageSource damagesource, float f) {
@@ -422,6 +446,7 @@ public class PetEnderDragon_v1_16_R3 extends EntityEnderDragon implements PetEnd
 			}*/
 		      //Jeppa-Version with Player
 		      for (org.bukkit.entity.Player player:Bukkit.getServer().getOnlinePlayers()) {
+		    	  Location loc = this.getBukkitEntity().getLocation();
 		    	  double distance = player.getLocation().distance(loc);
 		    	  if (deathSoundRadius > 0 && distance > deathSoundRadius)continue;
 		    	  if (!player.getWorld().getName().equals(this.getBukkitEntity().getWorld().getName()))continue; 

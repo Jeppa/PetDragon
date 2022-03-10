@@ -17,7 +17,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class PetDragon extends JavaPlugin {
 	
 	// SUPPORTED:
-	// 1.18, 1.18.1
+	// 1.18, 1.18.1, 1.18.2
 	// 1.17, 1.17.1
 	// 1.16, 1.16.1, 1.16.2, 1.16.3, 1.16.4, 1.16.5 (tested)
 	// 1.15, 1.15.1 (not tested), 1.15.2 (1.15-R1)
@@ -28,14 +28,17 @@ public class PetDragon extends JavaPlugin {
 	private CustomItems customItems;
 	
 	private DragonLocations dragonLocations; //for remembering the dragons locations...
-	
+
+	@Override
+	public void onLoad() {
+		this.factory = new DragonFactory(this);
+	}
+
 	@Override
 	public void onEnable() {
 		String logPrefix = "[" + this.getName() + "] ";
-
-		this.factory = new DragonFactory(this);
 		
-		if (!factory.isCorrectVersion()){ //... autoreplaced by lombok.Getter!
+		if (!factory.isCorrectVersion()){
 			getServer().getConsoleSender().sendMessage(ChatColor.BOLD + "" +ChatColor.RED + logPrefix + "Unsupported minecraft version! Check the download page for supported versions!");
 			getServer().getConsoleSender().sendMessage(ChatColor.BOLD + "" +ChatColor.RED + logPrefix + "Plugin will disable to prevent crashing!");
 			return;

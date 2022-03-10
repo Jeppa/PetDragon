@@ -2,18 +2,25 @@ package com.ericdebouwer.petdragon.enderdragonNMS;
 
 import com.ericdebouwer.petdragon.PetDragon;
 import com.ericdebouwer.petdragon.api.DragonSwoopEvent;
-//import net.minecraft.core.BlockPos;
+import com.mojang.datafixers.DataFixUtils;
+import com.mojang.datafixers.types.Type;
+import net.minecraft.SharedConstants;
+import net.minecraft.core.Holder;
+import net.minecraft.core.MappedRegistry;
+import net.minecraft.core.Registry;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
-//import net.minecraft.network.protocol.game.ClientboundLevelEventPacket;
-//import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
+import net.minecraft.util.datafix.DataFixers;
+import net.minecraft.util.datafix.fixes.References;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.boss.EnderDragonPart;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
@@ -23,29 +30,29 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.Sound;
 import org.bukkit.craftbukkit.v1_18_R2.CraftWorld;
 import org.bukkit.craftbukkit.v1_18_R2.entity.CraftEnderDragon;
 import org.bukkit.craftbukkit.v1_18_R2.entity.CraftLivingEntity;
 import org.bukkit.entity.DragonFireball;
 import org.bukkit.entity.HumanEntity;
-//import org.bukkit.entity.Player;
-import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
+import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 
 public class PetEnderDragon_v1_18_R2 extends EnderDragon implements PetEnderDragon {
 
-	private PetDragon plugin;
-
-	Location loc;
 	@Getter @Setter
 	private Location lastLocation;
 
@@ -53,7 +60,19 @@ public class PetEnderDragon_v1_18_R2 extends EnderDragon implements PetEnderDrag
 	static Method checkWalls;
 	static Method checkCrystals;
 	static {
+		ResourceLocation mcKey = new ResourceLocation(PetEnderDragon.ENTITY_ID);
 		try {
+			if (!Registry.ENTITY_TYPE.getOptional(mcKey).isPresent()) {
+				unfreezeEntityRegistry();
+				@SuppressWarnings("unchecked")
+				Map<String, Type<?>> types = (Map<String, Type<?>>) DataFixers.getDataFixer().getSchema(
+						DataFixUtils.makeKey(SharedConstants.getCurrentVersion().getDataVersion().getVersion()))
+						.findChoiceType(References.ENTITY).types();
+				types.put(mcKey.toString(), types.get(Registry.ENTITY_TYPE.getKey(EntityType.ENDER_DRAGON).toString()));
+				Registry.register(Registry.ENTITY_TYPE, PetEnderDragon.ENTITY_ID,
+						EntityType.Builder.of(PetEnderDragon_v1_18_R2::new, MobCategory.MONSTER).noSummon().build(PetEnderDragon.ENTITY_ID));
+				Registry.ENTITY_TYPE.freeze();
+			}
 			// specialsource does ignore reflection, so non mapped names	
 			jumpField = LivingEntity.class.getDeclaredField("bn");
 			jumpField.setAccessible(true);
@@ -61,27 +80,35 @@ public class PetEnderDragon_v1_18_R2 extends EnderDragon implements PetEnderDrag
 			checkWalls.setAccessible(true);
 			checkCrystals = EnderDragon.class.getDeclaredMethod("fA");
 			checkCrystals.setAccessible(true);
-		} catch (NoSuchFieldException | NoSuchMethodException ignore) {
+		} catch (NoSuchFieldException | NoSuchMethodException | IllegalAccessException ignore) {
 		}
 	}
 
+    private static void unfreezeEntityRegistry() throws NoSuchFieldException, IllegalAccessException {
+        Field intrusiveHolderCache = MappedRegistry.class.getDeclaredField("bN");
+        intrusiveHolderCache.setAccessible(true);
+        intrusiveHolderCache.set(Registry.ENTITY_TYPE, new IdentityHashMap<EntityType<?>, Holder.Reference<EntityType<?>>>());
+        Field frozenField = MappedRegistry.class.getDeclaredField("bL");
+        frozenField.setAccessible(true);
+        frozenField.set(Registry.ENTITY_TYPE, false);
+    }
+
+	private final PetDragon plugin;
 	private long lastShot;
 	private boolean didMove;
 	int growlTicks = 100;
 
 	public PetEnderDragon_v1_18_R2(EntityType<? extends EnderDragon> entitytypes, Level world) {
-		super(EntityType.ENDER_DRAGON, world);
+		this(world.getWorld());
 	}
 
-	public PetEnderDragon_v1_18_R2(Location loc, PetDragon plugin){
-		super(null, ((CraftWorld)loc.getWorld()).getHandle());
-		this.plugin = plugin;
-		this.loc = loc;
+	public PetEnderDragon_v1_18_R2(World world) {
+		super(EntityType.ENDER_DRAGON, ((CraftWorld)world).getHandle());
+		this.plugin = JavaPlugin.getPlugin(PetDragon.class);
 
 		this.setupDefault();
 		this.getBukkitEntity().setSilent(plugin.getConfigManager().isSilent());
 		this.noPhysics = plugin.getConfigManager().isFlyThroughBlocks(); //noclip in Entity.class
-		this.setPos(loc.getX(), loc.getY(), loc.getZ());
 	}
 	
 	@Override
@@ -97,8 +124,9 @@ public class PetEnderDragon_v1_18_R2 extends EnderDragon implements PetEnderDrag
 	}
 
 	@Override
-	public void spawn() {
-		((CraftWorld)loc.getWorld()).getHandle().addFreshEntity(this, SpawnReason.CUSTOM);
+	public void spawn(Vector location) {
+		this.setPos(location.getX(), location.getY(), location.getZ());
+		this.level.addFreshEntity(this, CreatureSpawnEvent.SpawnReason.CUSTOM);
 	}
 	
 	@Override
@@ -117,7 +145,13 @@ public class PetEnderDragon_v1_18_R2 extends EnderDragon implements PetEnderDrag
 		return true;
 	}
 		
-	
+	@Override
+	public boolean save(CompoundTag nbttagcompound) {
+		boolean result = super.save(nbttagcompound);
+		nbttagcompound.putString("id", PetEnderDragon.ENTITY_ID);
+		return result;
+	}
+
 	@Override
 	public boolean hurt(EnderDragonPart entitycomplexpart, DamageSource damagesource, float f) {
 		if (!(damagesource.getEntity() instanceof Player)) return false;
@@ -408,6 +442,7 @@ public class PetEnderDragon_v1_18_R2 extends EnderDragon implements PetEnderDrag
 //			}
 			//Jeppa-Version with Player
 			for (org.bukkit.entity.Player player:Bukkit.getServer().getOnlinePlayers()) {
+				Location loc = this.getBukkitEntity().getLocation();
 				double distance = player.getLocation().distance(loc);
 				if (deathSoundRadius > 0 && distance > deathSoundRadius)continue;
 				if (!player.getWorld().getName().equals(this.getBukkitEntity().getWorld().getName()))continue;
