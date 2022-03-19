@@ -119,6 +119,7 @@ public class PetEnderDragon_v1_14_R1 extends EntityEnderDragon  implements PetEn
 	public void spawn(Vector location) {
 		this.setPosition(location.getX(), location.getY(), location.getZ());
 		this.world.addEntity(this, CreatureSpawnEvent.SpawnReason.CUSTOM);
+		plugin.getFactory().saveSpawnLocation(this);
 	}
 	
 	@Override

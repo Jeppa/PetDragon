@@ -43,7 +43,7 @@ public class EntitiesLoadListener {
 			} finally {
 				plugin.getServer().getPluginManager().registerEvents(new Listener() {
 					@EventHandler
-					private void onChunkLoad(WorldLoadEvent event) {
+					private void onWorldLoad(WorldLoadEvent event) {
 						for (Entity ent: event.getWorld().getEntitiesByClass(EnderDragon.class)){
 							plugin.getFactory().handleOldDragon(ent);
 						}

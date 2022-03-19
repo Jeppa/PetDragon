@@ -17,6 +17,8 @@ public class ReloadCmd extends SubCommand {
     boolean perform(CommandSender sender, String[] args) {
         configManager.reloadConfig();
 //        plugin.getFactory().reloadDragons();
+        plugin.getDragonLocations().dragonLocations=null;//reload locations, too
+        plugin.getDragonLocations().getDragonLocations();//^^
         for (World world: Bukkit.getWorlds()){
             for (EnderDragon dragon: world.getEntitiesByClass(EnderDragon.class)){
                 plugin.getFactory().resetDragon(dragon);

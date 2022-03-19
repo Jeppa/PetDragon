@@ -30,15 +30,14 @@ public class LocateCmd extends SubCommand {
         //Jeppa: 1st check all saved Locations if they are still valid and have dragons...
         UUID uuid = player.getUniqueId();
         //Collection<Location> locationList = //may be used....
-        		plugin.getDragonLocations().getLocationList(uuid); //returns a list with valid Locations for this player! (after the list has been checked... and the chunks have been activated!)
+        plugin.getDragonLocations().activateLocations(uuid); //activates the locations/chunks from list for this player!
+        
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-
 		//now go on with main function...
 	        Set<EnderDragon> dragons = plugin.getFactory().getDragons(player);
 	
 	        if (dragons.isEmpty()){
 	            plugin.getConfigManager().sendMessage(player, Message.NO_LOCATE, null);
-//	            return true;
 	        }
 	        configManager.sendMessage(player, Message.LOCATED_DRAGONS, ImmutableMap.of("amount", "" + dragons.size()));
 	        for (EnderDragon dragon: dragons){
@@ -61,7 +60,6 @@ public class LocateCmd extends SubCommand {
 	                player.sendMessage(text);
 	            }
 	        }
-//	        return true;
         },10);
         return true; //just return, no matter what happend...
     }

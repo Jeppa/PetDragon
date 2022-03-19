@@ -195,30 +195,28 @@ public class DragonListener implements Listener {
 	//Event to check if player is changing worlds while riding a dragon
 	//Sadly PlayerChangedWorldEvent can't be used, as the player is not riding anymore when event fires... :/
 	//Teleport Event can be used instead...
-	@EventHandler(priority = EventPriority.LOWEST)	
+	@EventHandler
 	public void onPlayerTeleport(PlayerTeleportEvent e) {
 		Player p = e.getPlayer();
-		onPlayerTeleportOrWorldchange(p);
-	}
-	
-	private void onPlayerTeleportOrWorldchange(Player p) {
 		Entity ent;
 		if (p.isInsideVehicle()) ent = p.getVehicle();
 		else return;
 		if (!plugin.getFactory().isPetDragon(ent)) return;
 		
 		Location oldLocation = ent.getLocation().getBlock().getLocation();
+		Entity teleDragon=plugin.getFactory().resetDragon((EnderDragon)ent,e.getTo().getBlock().getLocation());
+		
 		Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-			List<Entity> passengers = ent.getPassengers();
+			Location newLocation = teleDragon.getLocation().getBlock().getLocation();
+			List<Entity> passengers = teleDragon.getPassengers();
 			if (!passengers.contains(p)) {
-				ent.teleport(p);
-				ent.addPassenger(p);
+				teleDragon.addPassenger(p);
 			}
-			Location newLocation = ent.getLocation().getBlock().getLocation();
-			plugin.getFactory().resetDragon((EnderDragon)ent);
 			Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-				plugin.getDragonLocations().remLocation(p.getUniqueId(), newLocation);//dragonreset results in new dragon (spawn) -> remove that location from file...
-				plugin.getDragonLocations().remLocation(p.getUniqueId(), oldLocation);//dismounting from dragon results in saving the location -> remove that location from file, too...
+				if (teleDragon.getPassengers().contains(p)) { // Player is still riding the dragon...
+					plugin.getDragonLocations().remLocation(p.getUniqueId(), newLocation);//dragonreset results in new dragon (spawn) -> remove that location from file...
+					plugin.getDragonLocations().remLocation(p.getUniqueId(), oldLocation);//dismounting from dragon results in saving the location -> remove that location from file, too...
+				}
 			},5);
 		});
 	}

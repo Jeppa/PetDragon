@@ -115,6 +115,7 @@ public class PetEnderDragon_v1_17_R1_2 extends EnderDragon implements PetEnderDr
 	public void spawn(Vector location) {
 		this.setPos(location.getX(), location.getY(), location.getZ());
 		this.level.addEntity(this, CreatureSpawnEvent.SpawnReason.CUSTOM);
+		plugin.getFactory().saveSpawnLocation(this);
 	}
 	
 	@Override

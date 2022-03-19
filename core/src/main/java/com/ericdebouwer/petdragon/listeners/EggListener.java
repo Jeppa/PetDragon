@@ -33,7 +33,11 @@ public class EggListener implements Listener {
 			e.setCancelled(true);
 			return;
 		}
-
+		UUID uuid = e.getPlayer().getUniqueId();
+		if (plugin.getDragonLocations().isUUIDMarked(uuid)) {
+			e.setCancelled(true);
+			return;
+		}
 		//Jeppa: new version of egg place: event is ALWAYS canceled, check is delayed, egg gets removed from hand an given back if no spawn is possible!
 		ItemStack dragEgg=e.getItemInHand().clone(); 			//save the egg
 		dragEgg.setAmount(1); 									//only ONE egg...
@@ -44,8 +48,7 @@ public class EggListener implements Listener {
 			e.getBlock().setMetadata("isPetEgg", new FixedMetadataValue(plugin,true));//Set a marker for the 'dontTouch'-event :)
 		});
 
-		UUID uuid = e.getPlayer().getUniqueId();
-		plugin.getDragonLocations().getLocationList(uuid); //returns a list with valid Locations for this player (not used yet) and activates the chunks!
+		plugin.getDragonLocations().activateLocations(uuid); //activates chunks from list for this player!
 		Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
 			if (plugin.getConfigManager().isEggAbidesDragonMax() && !e.getPlayer().hasPermission("petdragon.bypass.dragonlimit")) {
 				int dragonCount = plugin.getFactory().getDragons(e.getPlayer()).size();

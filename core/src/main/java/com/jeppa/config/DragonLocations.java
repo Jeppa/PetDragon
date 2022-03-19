@@ -1,17 +1,22 @@
 package com.jeppa.config;
 
 import com.ericdebouwer.petdragon.PetDragon;
+
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Entity;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 //Jeppa: This file handles the DragonLocations file and it's usage!
@@ -25,6 +30,8 @@ public class DragonLocations {
 	
 	public FileConfiguration dragonLocations = null;
 	private File locationFile = null;
+	
+	private Set<UUID> markerForRunningCleanup=new HashSet<UUID>();
 	
 	private void reloadLocations() {
 		if (locationFile == null) {
@@ -48,10 +55,10 @@ public class DragonLocations {
 			plugin.getLogger().warning("Could not save location list to " + locationFile);
 		}
 	}
-	public void clearLocationList(){
-		dragonLocations.set("Locations", null);
-		saveLocationlist();
-	}
+//	public void clearLocationList(){
+//		dragonLocations.set("Locations", null);
+//		saveLocationlist();
+//	}
 	
 	//Usage/handling: add a location to the list
 	public void addLocation(UUID uid, Location loc) {
@@ -81,21 +88,25 @@ public class DragonLocations {
 			}
 		}
 	}
-	//Check the saved locations, and cleanup (returns the cleaned List, if needed for anything...)
-	public Collection<Location> getLocationList(UUID uuid) {
+	//Check the saved locations, and cleanup
+	public void activateLocations(UUID uuid) {
 		//First: check if any...!
-		if(!getConfSec("Locations").getKeys(false).contains(uuid.toString())){
-			return null;
-		} else {
-			Collection<Object> locs = getConfSec("Locations."+uuid).getValues(false).values();
-			//check the locations, and activate chunks!
-			Collection<Location> returnLocs= new ArrayList<Location>();
-			for (Object loc:locs){
-				Chunk chunk = ((Location)loc).getChunk();
-				if (!chunk.isLoaded())chunk.load();
+		if(!getConfSec("Locations").getKeys(false).contains(uuid.toString()))return;
+
+		Collection<Object> locs = getConfSec("Locations."+uuid).getValues(false).values();
+		//activate chunks!
+		locs.forEach(loc -> {Chunk chunk=((Location)loc).getChunk();if(!chunk.isLoaded())chunk.load();});
+		cleanupLocations(locs, uuid); //check the locations, reorg and save the locations (after 10 ticks...)
+	}
+	//Check the given List and return List with Locations of existing Dragons (No delay here)
+	private Collection<Location> getEntLocations(Collection<Object> oldLocs, UUID uuid){
+		Collection<Location> returnLocs= new ArrayList<Location>();
+		for (Object loc:oldLocs){
+			Chunk chunk = ((Location)loc).getChunk();
+			if (chunk.isLoaded()) {
 				Entity[] ents=chunk.getEntities();
 				for (Entity ent:ents) {
-					if (plugin.getFactory().isPetDragon(ent)) { //Check if Entity is a PetDragon
+					if (plugin.getFactory().isPetDragon(ent) && plugin.getFactory().getOwner((EnderDragon)ent).equals(uuid)) {
 						Location dragLoc = ent.getLocation().getBlock().getLocation();
 						if (loc.equals(dragLoc)) {
 							returnLocs.add(dragLoc);
@@ -104,11 +115,8 @@ public class DragonLocations {
 					}
 				}
 			}
-			//now write new 'returnLocs'-list to config!
-			reorgLocationSection(uuid,(Collection<?>)returnLocs);
-			//..and return the list...
-			return returnLocs;
 		}
+		return returnLocs; //List with dragons at given locations
 	}
 	//get a ConfigurationSection, even if it's not existing, yet...
 	private ConfigurationSection getConfSec(String section) {
@@ -119,6 +127,17 @@ public class DragonLocations {
 		}
 		return configSec;
 	}
+	private void cleanupLocations(Collection<Object> locs, UUID uuid) {
+		if (!markerForRunningCleanup.contains(uuid))markerForRunningCleanup.add(uuid);//mark this UUID
+		Collection<Location> returnLocs_1 = getEntLocations(locs, uuid); //could be empty, depends on chunk loaded or not...
+		//get Location-list a few ticks later, so Paper can load the entities after chunk has been loaded
+		Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+			Collection<Location> returnLocs = getEntLocations(locs, uuid);//could be empty too, depends on chunk loaded or not...
+			returnLocs_1.forEach(loc -> {if(!returnLocs.contains(loc))returnLocs.add(loc);});
+			reorgLocationSection(uuid, returnLocs);	//write new list to config!
+			markerForRunningCleanup.remove(uuid);	//remove this UUID marker
+		},10);
+	}
 	private void reorgLocationSection(UUID uuid, Collection<?> locs) {
 		int i=1;
 		dragonLocations.set("Locations."+uuid.toString(),null);
@@ -128,5 +147,8 @@ public class DragonLocations {
 		}
 		saveLocationlist();
 	}
-	
+	//getter for the UUID-marker..
+	public boolean isUUIDMarked(UUID uuid){
+		return markerForRunningCleanup.contains(uuid);
+	}
 }

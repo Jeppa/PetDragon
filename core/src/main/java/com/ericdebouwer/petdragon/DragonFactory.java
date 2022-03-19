@@ -16,9 +16,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.lang.reflect.InvocationTargetException;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -40,7 +38,7 @@ public class DragonFactory {
 		this.correctVersion = this.setUpDragonClass();
 	}
 	
-	String nmsVersion; //make it usable from outside.. :)
+	String nmsVersion; //plugin-wide usable
 	public boolean setUpDragonClass(){
 		String packageName = plugin.getServer().getClass().getPackage().getName();
 		nmsVersion = packageName.substring(packageName.lastIndexOf('.') + 1);
@@ -72,8 +70,6 @@ public class DragonFactory {
 			}
 			if (owner != null){
 				dragon.getEntity().getPersistentDataContainer().set(ownerKey, PersistentDataType.STRING, owner.toString());
-				//Jeppa: Save dragon location to file
-				plugin.getDragonLocations().addLocation(owner, dragon.getEntity().getLocation());
 			}
 			return dragon;
 		} catch (Exception e){
@@ -81,14 +77,15 @@ public class DragonFactory {
 		}
 		return null;
 	}
+	//Jeppa: Save dragon location to file
+	public void saveSpawnLocation(PetEnderDragon dragon) {//this is called from NMS-code...at spawn...
+		UUID owner = getOwner(dragon.getEntity());
+		if (owner!=null) plugin.getDragonLocations().addLocation(owner, dragon.getEntity().getLocation());
+	}
 	
 	public boolean isPetDragon(Entity ent){
 		if (!(ent instanceof EnderDragon)) return false;
 		boolean isPet=ent.getScoreboardTags().contains(PetEnderDragon.DRAGON_ID);
-		//check for existing owner...(if Tag fails...what never should happen...)
-		if (!isPet) {
-			isPet=ent.getPersistentDataContainer().has(ownerKey, PersistentDataType.STRING);
-		}
 		return isPet;
 	}
 	
@@ -120,7 +117,7 @@ public class DragonFactory {
 		//Jeppa: remove saved location from file...
 		plugin.getDragonLocations().remLocation(owner, dragon.getLocation());
 
-		//Jeppa: Reset Dragon if needed...
+		//Jeppa: Reset Dragon if necessary...
 		handleOldDragon(dragon);
 
 		return true;
@@ -128,29 +125,34 @@ public class DragonFactory {
 
 	/**
 	 * Manually reset dragons spawned before 1.6 since their entity type is still wrong
+	 * Jeppa: return value represents the resulting entity (old one if no reset is necessary)
 	 * @param ent the dragon to check
 	 */
-	public void handleOldDragon(Entity ent) {
-		if (!isPetDragon(ent)) return;
+	public Entity handleOldDragon(Entity ent) {
+		if (!isPetDragon(ent)) return ent;
 		EnderDragon dragon = (EnderDragon) ent;
 		try {
-			if (dragon.getClass().getDeclaredMethod("getHandle").invoke(dragon) instanceof PetEnderDragon) return;
+			if (dragon.getClass().getDeclaredMethod("getHandle").invoke(dragon) instanceof PetEnderDragon) return ent;
 		} catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignore) {
 		}
-		resetDragon(dragon);
+		return resetDragon(dragon);
 	}
 
-	public void resetDragon(EnderDragon dragon) {
-		if (!isPetDragon(dragon)) return;
+	public Entity resetDragon(EnderDragon dragon) {
+		return resetDragon(dragon, null);
+	}
+	public Entity resetDragon(EnderDragon dragon, Location newLoc) {
+		if (!isPetDragon(dragon)) return (Entity)dragon;
+		
 		List<Entity> passengers = dragon.getPassengers();
-
-		PetEnderDragon petDragon = this.create(dragon.getWorld(), null);
+		PetEnderDragon petDragon = this.create(newLoc!=null?newLoc.getWorld():dragon.getWorld(), null);
 		petDragon.copyFrom(dragon);
 		double health=dragon.getHealth();
+		petDragon.spawn(newLoc!=null?newLoc.toVector():dragon.getLocation().toVector());
 		dragon.remove();
-		petDragon.spawn(dragon.getLocation().toVector());
 		petDragon.getEntity().setHealth(health);//keep the damage/health?
 		passengers.forEach(p -> petDragon.getEntity().addPassenger(p));
+		return petDragon.getEntity();
 	}
 
 	public Set<EnderDragon> getDragons(OfflinePlayer player){
