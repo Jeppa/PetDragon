@@ -203,6 +203,11 @@ public class DragonListener implements Listener {
 		else return;
 		if (!plugin.getFactory().isPetDragon(ent)) return;
 		
+		if (!p.hasPermission("petdragon.ride."+e.getTo().getWorld().getName().toLowerCase().trim()) ) {
+			e.setCancelled(true);
+			return;
+		}
+		
 		Location oldLocation = ent.getLocation().getBlock().getLocation();
 		Entity teleDragon=plugin.getFactory().resetDragon((EnderDragon)ent,e.getTo().getBlock().getLocation());
 		

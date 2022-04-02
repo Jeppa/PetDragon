@@ -102,7 +102,7 @@ public class DragonFactory {
 		ItemStack handHeld = p.getInventory().getItemInMainHand();
 		if ( !(handHeld == null || handHeld.getType().isAir())) return false;
 		
-		if (!p.hasPermission("petdragon.ride")) {
+		if (!p.hasPermission("petdragon.ride") || !p.hasPermission("petdragon.ride."+p.getWorld().getName().toLowerCase())) {
 			plugin.getConfigManager().sendMessage(p, Message.NO_RIDE_PERMISSION, null);
 			return true;
 		}
