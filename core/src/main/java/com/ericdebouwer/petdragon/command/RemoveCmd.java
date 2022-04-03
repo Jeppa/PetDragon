@@ -118,7 +118,14 @@ public class RemoveCmd extends SubCommand {
         		}
         	}
 
-        	if (found) configManager.sendMessage(player, Message.DRAGON_REMOVED, null);
+        	if (found) {
+        		configManager.sendMessage(player, Message.DRAGON_REMOVED, null);
+        		//Now give back the egg (depends on config and permission)
+        		if (plugin.getConfigManager().isGetBackEggOnRemove() && player.hasPermission("petdragon.spawnegg")) {
+        			player.getInventory().addItem(plugin.getCustomItems().getEgg());
+        			configManager.sendMessage(player, Message.EGG_RECEIVED, null);
+        		}
+        	}
         	else configManager.sendMessage(player, Message.DRAGON_NOT_FOUND, null);
         },10);
     

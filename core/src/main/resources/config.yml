@@ -88,6 +88,9 @@ endworld-teleport-source-hight: -5
 overworld-teleport-dest-hight: 300
 enable-world-teleport: true
 
+# Whether PetDragon spawn eggs will be received when a dragon gets removed by it's owner
+get-back-egg: false
+
 messages:
    no-command-permission: "§l§cSorry§r§7, you don't have permission to use that command!"
    no-ride-permission: "§l§cSorry§r§7, you don't have permission to ride dragons!"

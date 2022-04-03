@@ -51,6 +51,7 @@ public class ConfigManager {
 	private final String pluginPrefix = "§r[§5§lPetDragon§r] ";
 	private String dragonEggName;
 	private boolean alwaysUseUpEgg;
+	private boolean getBackEggOnRemove;
 //	private boolean useMaxDragonsForEggs;
 	private boolean eggAbidesDragonMax;
 	private boolean fireOnJump;
@@ -133,6 +134,8 @@ public class ConfigManager {
 		endSource_y = plugin.getConfig().getDouble("endworld-teleport-source-hight", -5);
 		worldDest_y = plugin.getConfig().getDouble("overworld-teleport-dest-hight", 300);
 		worldTeleport = plugin.getConfig().getBoolean("enable-world-teleport",true);
+		
+		getBackEggOnRemove = plugin.getConfig().getBoolean("get-back-egg",false);
 	}
 	
 	public String parseMessage(Message message, ImmutableMap<String, String> replacements) {
