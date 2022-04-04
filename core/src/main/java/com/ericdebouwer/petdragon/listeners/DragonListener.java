@@ -203,13 +203,20 @@ public class DragonListener implements Listener {
 		else return;
 		if (!plugin.getFactory().isPetDragon(ent)) return;
 		
-		if (!p.hasPermission("petdragon.ride."+e.getTo().getWorld().getName().toLowerCase().trim()) ) {
+		boolean cancelled=e.isCancelled();
+		String toWorld=e.getTo().getWorld().getName().toLowerCase().trim();
+		if (p.isPermissionSet("petdragon.ride."+toWorld) && !p.hasPermission("petdragon.ride."+toWorld)) {
 			e.setCancelled(true);
-			return;
+			cancelled=true; //just returning here will dismount the player...
 		}
 		
 		Location oldLocation = ent.getLocation().getBlock().getLocation();
-		Entity teleDragon=plugin.getFactory().resetDragon((EnderDragon)ent,e.getTo().getBlock().getLocation());
+		Entity teleDragon;
+		if(!cancelled)
+			teleDragon=plugin.getFactory().resetDragon((EnderDragon)ent,e.getTo().getBlock().getLocation());
+		else 
+			teleDragon=ent;
+		
 		
 		Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(plugin, () -> {
 			Location newLocation = teleDragon.getLocation().getBlock().getLocation();
@@ -223,7 +230,7 @@ public class DragonListener implements Listener {
 					plugin.getDragonLocations().remLocation(p.getUniqueId(), oldLocation);//dismounting from dragon results in saving the location -> remove that location from file, too...
 				}
 			},5);
-		});
+		},(cancelled?5:0)); //if event was cancelt wait 5 more ticks...
 	}
 
 	//Jeppa: New world-change function, original idea from SwagSteve's plugin EndDirect...
